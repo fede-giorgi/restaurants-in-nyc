@@ -20,6 +20,41 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
 </style>
 
 
@@ -146,6 +181,8 @@ ul.task-list li input[type="checkbox"] {
   <ul>
   <li><a href="#description" id="toc-description" class="nav-link active" data-scroll-target="#description"><span class="header-section-number">2.1</span> Description</a></li>
   <li><a href="#missing-value-analysis" id="toc-missing-value-analysis" class="nav-link" data-scroll-target="#missing-value-analysis"><span class="header-section-number">2.2</span> Missing value analysis</a></li>
+  <li><a href="#restaurant-level-aggregation" id="toc-restaurant-level-aggregation" class="nav-link" data-scroll-target="#restaurant-level-aggregation"><span class="header-section-number">2.3</span> Restaurant-level aggregation</a></li>
+  <li><a href="#cuisine-grouping" id="toc-cuisine-grouping" class="nav-link" data-scroll-target="#cuisine-grouping"><span class="header-section-number">2.4</span> Cuisine Grouping</a></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/fede-giorgi/restaurants-in-nyc/edit/main/data.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/fede-giorgi/restaurants-in-nyc/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
@@ -171,11 +208,377 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load libraries</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse) </span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggdensity)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(lubridate)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(purrr)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">dplyr.width =</span> <span class="cn">Inf</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load the dataset with specific column types</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"C:/Users/famig/OneDrive/Scuola/0 Columbia University/1 Fall 2025/STAT GR5702 - Exploratory Data Analysis &amp; Visualization/EDAV/DOHMH_New_York_City_Restaurant_Inspection_Results.csv"</span>,</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>                 <span class="at">col_types =</span> <span class="fu">cols</span>(</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">.default =</span> <span class="fu">col_character</span>(),      <span class="co"># Set default to character for safety</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">CAMIS =</span> <span class="fu">col_double</span>(),            <span class="co"># Unique ID</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">ZIPCODE =</span> <span class="fu">col_character</span>(),       <span class="co"># Important: Keep as character to prevent stripping leading zeros</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">SCORE =</span> <span class="fu">col_double</span>(),</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">Latitude =</span> <span class="fu">col_double</span>(),</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">Longitude =</span> <span class="fu">col_double</span>(),</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    <span class="st">`</span><span class="at">Community Board</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">col_double</span>(),</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">BIN =</span> <span class="fu">col_double</span>(),</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">BBL =</span> <span class="fu">col_double</span>()</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">show_col_types =</span> <span class="cn">FALSE</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a> ) <span class="sc">%&gt;%</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Clean up date columns immediately using lubridate</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="st">`</span><span class="at">INSPECTION DATE</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">mdy</span>(<span class="st">`</span><span class="at">INSPECTION DATE</span><span class="st">`</span>),</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>         <span class="st">`</span><span class="at">GRADE DATE</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">mdy</span>(<span class="st">`</span><span class="at">GRADE DATE</span><span class="st">`</span>),</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>         <span class="st">`</span><span class="at">RECORD DATE</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">mdy</span>(<span class="st">`</span><span class="at">RECORD DATE</span><span class="st">`</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
 <section id="description" class="level2" data-number="2.1">
 <h2 data-number="2.1" class="anchored" data-anchor-id="description"><span class="header-section-number">2.1</span> Description</h2>
 </section>
 <section id="missing-value-analysis" class="level2" data-number="2.2">
 <h2 data-number="2.2" class="anchored" data-anchor-id="missing-value-analysis"><span class="header-section-number">2.2</span> Missing value analysis</h2>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate percentage of missing values per column</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>missing_summary <span class="ot">&lt;-</span> df <span class="sc">%&gt;%</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="fu">across</span>(<span class="fu">everything</span>(), <span class="sc">~</span> <span class="fu">mean</span>(<span class="fu">is.na</span>(.)) <span class="sc">*</span> <span class="dv">100</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="fu">everything</span>(), <span class="at">names_to =</span> <span class="st">"column"</span>, <span class="at">values_to =</span> <span class="st">"percent_missing"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(percent_missing <span class="sc">&gt;</span> <span class="dv">0</span>) <span class="sc">%&gt;%</span> <span class="co"># Filter only columns with missing values</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(percent_missing))</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Bar chart</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(missing_summary, <span class="fu">aes</span>(<span class="at">x =</span> <span class="fu">reorder</span>(column, percent_missing), <span class="at">y =</span> percent_missing)) <span class="sc">+</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>(<span class="at">fill =</span> <span class="st">"steelblue"</span>) <span class="sc">+</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">coord_flip</span>() <span class="sc">+</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Percentage of Missing Values by Column"</span>,</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Variable"</span>, </span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"% Missing"</span>) <span class="sc">+</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="data_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The bar chart highlights that GRADE and GRADE DATE are the variables with the highest missingness (approximately 50%). This is consistent with the inspection process, where many initial or administrative inspections generate a score but do not immediately result in a letter grade.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Create patterns</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>missing_patterns <span class="ot">&lt;-</span> df <span class="sc">%&gt;%</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(GRADE, <span class="st">`</span><span class="at">GRADE DATE</span><span class="st">`</span>, SCORE, <span class="st">`</span><span class="at">VIOLATION CODE</span><span class="st">`</span>, <span class="st">`</span><span class="at">ACTION</span><span class="st">`</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">everything</span>(), is.na)) <span class="sc">%&gt;%</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(<span class="fu">across</span>(<span class="fu">everything</span>())) <span class="sc">%&gt;%</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">count =</span> <span class="fu">n</span>(), <span class="at">.groups =</span> <span class="st">"drop"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(count)) <span class="sc">%&gt;%</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">pattern_id =</span> <span class="fu">row_number</span>()) <span class="sc">%&gt;%</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="at">cols =</span> <span class="sc">-</span><span class="fu">c</span>(count, pattern_id), <span class="at">names_to =</span> <span class="st">"variable"</span>, <span class="at">values_to =</span> <span class="st">"is_missing"</span>)</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Prepare data for plotting (Top 10 only)</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>top_patterns <span class="ot">&lt;-</span> missing_patterns <span class="sc">%&gt;%</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(pattern_id <span class="sc">&lt;=</span> <span class="dv">10</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Create a descriptive Y-axis label including the count</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">row_label =</span> <span class="fu">paste0</span>(<span class="st">"Pattern "</span>, pattern_id, <span class="st">" (n = "</span>, count, <span class="st">")"</span>))</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Visualization</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(top_patterns, <span class="fu">aes</span>(<span class="at">x =</span> variable, <span class="at">y =</span> <span class="fu">fct_rev</span>(<span class="fu">fct_inorder</span>(row_label)), <span class="at">fill =</span> is_missing)) <span class="sc">+</span></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_tile</span>(<span class="at">color =</span> <span class="st">"white"</span>) <span class="sc">+</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Manual colors: Orange for Missing, Grey for Present</span></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"TRUE"</span> <span class="ot">=</span> <span class="st">"tomato"</span>, <span class="st">"FALSE"</span> <span class="ot">=</span> <span class="st">"grey80"</span>), </span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>                    <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"Present"</span>, <span class="st">"Missing"</span>)) <span class="sc">+</span></span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>  <span class="co"># English labels</span></span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Common Missing Value Patterns"</span>,</span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>       <span class="at">subtitle =</span> <span class="st">"Which columns tend to be missing together? (Top 10 Patterns)"</span>,</span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Variable"</span>, </span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Pattern Frequency"</span>, </span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>       <span class="at">fill =</span> <span class="st">"Is Missing?"</span>) <span class="sc">+</span></span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>() <span class="sc">+</span></span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">45</span>, <span class="at">hjust =</span> <span class="dv">1</span>)) <span class="co"># Tilt x-axis text for readability</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="data_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The heatmap reveals that missing data follows structural patterns rather than being random. While Pattern 1 represents complete inspections, Pattern 2 (almost as frequent) indicates cases where a SCORE exists but the GRADE is missing, likely representing “Grade Pending” or initial inspection stages. Pattern 3 highlights administrative violations where neither a score nor a grade is assigned.</p>
+</section>
+<section id="restaurant-level-aggregation" class="level2" data-number="2.3">
+<h2 data-number="2.3" class="anchored" data-anchor-id="restaurant-level-aggregation"><span class="header-section-number">2.3</span> Restaurant-level aggregation</h2>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Helper functions to handle NAs safely</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>last_non_null <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  x <span class="ot">&lt;-</span> x[<span class="sc">!</span><span class="fu">is.na</span>(x)]</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">length</span>(x) <span class="sc">==</span> <span class="dv">0</span>) <span class="fu">return</span>(<span class="cn">NA</span>)</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tail</span>(x, <span class="dv">1</span>)</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>safe_mean <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  x <span class="ot">&lt;-</span> x[<span class="sc">!</span><span class="fu">is.na</span>(x)]</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">length</span>(x) <span class="sc">==</span> <span class="dv">0</span>) <span class="fu">return</span>(<span class="cn">NA_real_</span>)</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mean</span>(x)</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="co"># --- DATA TRANSFORMATION ---</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>restaurants <span class="ot">&lt;-</span> df <span class="sc">%&gt;%</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>  <span class="co"># 1. TIME FILTER BEFORE GROUPING</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Remove dummy dates (1900) and focus on relevant recent data (post-2015)</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="st">`</span><span class="at">INSPECTION DATE</span><span class="st">`</span> <span class="sc">&gt;=</span> <span class="fu">ymd</span>(<span class="st">"2015-01-01"</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="st">`</span><span class="at">INSPECTION DATE</span><span class="st">`</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(CAMIS) <span class="sc">%&gt;%</span></span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">DBA      =</span> <span class="fu">first</span>(<span class="fu">na.omit</span>(DBA)),    <span class="co"># Takes the first non-null name</span></span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">BORO     =</span> <span class="fu">first</span>(<span class="fu">na.omit</span>(BORO)),</span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>    <span class="at">BUILDING =</span> <span class="fu">first</span>(BUILDING),</span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>    <span class="at">STREET   =</span> <span class="fu">first</span>(STREET),</span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>    <span class="at">ZIPCODE  =</span> <span class="fu">first</span>(ZIPCODE),</span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>    <span class="at">PHONE    =</span> <span class="fu">first</span>(PHONE),</span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>    <span class="at">CUISINE_DESCRIPTION =</span> <span class="fu">first</span>(<span class="st">`</span><span class="at">CUISINE DESCRIPTION</span><span class="st">`</span>),</span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>    <span class="co"># 2. ROBUST COORDINATES</span></span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>    <span class="co"># If the first value is NA, the mean retrieves the location across inspections</span></span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a>    <span class="at">Latitude  =</span> <span class="fu">mean</span>(Latitude, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), </span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a>    <span class="at">Longitude =</span> <span class="fu">mean</span>(Longitude, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a>    <span class="at">n_inspections    =</span> <span class="fu">n_distinct</span>(<span class="st">`</span><span class="at">INSPECTION DATE</span><span class="st">`</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb5-37"><a href="#cb5-37" aria-hidden="true" tabindex="-1"></a>    <span class="at">first_inspection =</span> <span class="fu">min</span>(<span class="st">`</span><span class="at">INSPECTION DATE</span><span class="st">`</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb5-38"><a href="#cb5-38" aria-hidden="true" tabindex="-1"></a>    <span class="at">last_inspection  =</span> <span class="fu">max</span>(<span class="st">`</span><span class="at">INSPECTION DATE</span><span class="st">`</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb5-39"><a href="#cb5-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-40"><a href="#cb5-40" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_score =</span> <span class="fu">safe_mean</span>(SCORE),</span>
+<span id="cb5-41"><a href="#cb5-41" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Mean score provides a good summary of overall hygiene performance</span></span>
+<span id="cb5-42"><a href="#cb5-42" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb5-43"><a href="#cb5-43" aria-hidden="true" tabindex="-1"></a>    <span class="at">last_grade =</span> <span class="fu">last_non_null</span>(GRADE),</span>
+<span id="cb5-44"><a href="#cb5-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-45"><a href="#cb5-45" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Create a list of all unique violations ever received by the restaurant</span></span>
+<span id="cb5-46"><a href="#cb5-46" aria-hidden="true" tabindex="-1"></a>    <span class="at">violations =</span> <span class="fu">list</span>(<span class="fu">unique</span>(<span class="fu">na.omit</span>(<span class="st">`</span><span class="at">VIOLATION DESCRIPTION</span><span class="st">`</span>))),</span>
+<span id="cb5-47"><a href="#cb5-47" aria-hidden="true" tabindex="-1"></a>    <span class="at">.groups =</span> <span class="st">"drop"</span></span>
+<span id="cb5-48"><a href="#cb5-48" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb5-49"><a href="#cb5-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-50"><a href="#cb5-50" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Final row count (Restaurants):"</span>, <span class="fu">nrow</span>(restaurants), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Final row count (Restaurants): 26592 </code></pre>
+</div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># View the resulting dataframe</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>restaurants</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 26,592 × 16
+      CAMIS DBA                         BORO      BUILDING STREET            
+      &lt;dbl&gt; &lt;chr&gt;                       &lt;chr&gt;     &lt;chr&gt;    &lt;chr&gt;             
+ 1 30075445 MORRIS PARK BAKE SHOP       Bronx     1007     MORRIS PARK AVENUE
+ 2 30191841 D.J. REYNOLDS               Manhattan 351      WEST   57 STREET  
+ 3 40356018 RIVIERA CATERERS            Brooklyn  2780     STILLWELL AVENUE  
+ 4 40356483 WILKEN'S FINE FOOD          Brooklyn  7114     AVENUE U          
+ 5 40356731 TASTE THE TROPICS ICE CREAM Brooklyn  1839     NOSTRAND AVENUE   
+ 6 40357217 ASIA PLAZA CAFÉ             Bronx     2300     SOUTHERN BOULEVARD
+ 7 40359480 1 EAST 66TH STREET KITCHEN  Manhattan 1        EAST   66 STREET  
+ 8 40359705 NATHAN'S FAMOUS             Brooklyn  1310     SURF AVENUE       
+ 9 40360045 SEUDA FOODS                 Brooklyn  705      KINGS HIGHWAY     
+10 40361618 SAL'S DELI                  Queens    12908    20 AVENUE         
+   ZIPCODE PHONE      CUISINE_DESCRIPTION      Latitude Longitude n_inspections
+   &lt;chr&gt;   &lt;chr&gt;      &lt;chr&gt;                       &lt;dbl&gt;     &lt;dbl&gt;         &lt;int&gt;
+ 1 10462   7188924968 Bakery Products/Desserts     40.8     -73.9             5
+ 2 10019   2122452912 Irish                        40.8     -74.0             3
+ 3 11224   7183723031 American                     40.6     -74.0             2
+ 4 11234   7184443838 Sandwiches                   40.6     -73.9             6
+ 5 11226   7188560821 Frozen Desserts              40.6     -73.9             3
+ 6 10460   7187411426 American                     40.9     -73.9             2
+ 7 10065   2128793900 American                     40.8     -74.0             2
+ 8 11224   7183332202 Hotdogs                      40.6     -74.0             3
+ 9 11223   7183751500 Jewish/Kosher                40.6     -74.0             3
+10 11356   7186619498 Sandwiches                   40.8     -73.8             3
+   first_inspection last_inspection mean_score last_grade violations
+   &lt;date&gt;           &lt;date&gt;               &lt;dbl&gt; &lt;chr&gt;      &lt;list&gt;    
+ 1 2023-01-31       2024-11-08           19.7  A          &lt;chr [13]&gt;
+ 2 2023-04-23       2025-02-20           18.4  A          &lt;chr [8]&gt; 
+ 3 2024-04-16       2025-09-17            6.67 A          &lt;chr [3]&gt; 
+ 4 2022-01-24       2025-01-06           23.6  A          &lt;chr [14]&gt;
+ 5 2023-01-17       2025-04-30           11.3  A          &lt;chr [7]&gt; 
+ 6 2024-05-21       2025-10-20           12    A          &lt;chr [4]&gt; 
+ 7 2019-10-01       2022-05-03            9    A          &lt;chr [3]&gt; 
+ 8 2023-04-26       2025-10-08           40.6  A          &lt;chr [12]&gt;
+ 9 2022-01-05       2024-07-29           10.8  A          &lt;chr [7]&gt; 
+10 2022-02-01       2024-09-16           11.6  A          &lt;chr [7]&gt; 
+# ℹ 26,582 more rows</code></pre>
+</div>
+</div>
+<p>The original dataset is granular, containing multiple rows for every single inspection and violation. To perform a restaurant-level analysis—such as mapping cuisine locations or comparing hygiene standards across different culinary traditions—we aggregate the data to create a unique entry for each establishment, summarizing its history into single metrics like mean_score and average coordinates.</p>
+</section>
+<section id="cuisine-grouping" class="level2" data-number="2.4">
+<h2 data-number="2.4" class="anchored" data-anchor-id="cuisine-grouping"><span class="header-section-number">2.4</span> Cuisine Grouping</h2>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>mapping <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># --- AMERICAN (Include ora Seafood, Jewish/Kosher e varianti regionali) ---</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="st">"American"</span>                       <span class="ot">=</span> <span class="st">"American"</span>,</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="st">"New American"</span>                   <span class="ot">=</span> <span class="st">"American"</span>,</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Chicken"</span>                        <span class="ot">=</span> <span class="st">"American"</span>,</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Hamburgers"</span>                     <span class="ot">=</span> <span class="st">"American"</span>,</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Steakhouse"</span>                     <span class="ot">=</span> <span class="st">"American"</span>,</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Barbecue"</span>                       <span class="ot">=</span> <span class="st">"American"</span>,</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Hotdogs"</span>                        <span class="ot">=</span> <span class="st">"American"</span>,</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Hotdogs/Pretzels"</span>               <span class="ot">=</span> <span class="st">"American"</span>,</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Soul Food"</span>                      <span class="ot">=</span> <span class="st">"American"</span>,</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Continental"</span>                    <span class="ot">=</span> <span class="st">"American"</span>,</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Californian"</span>                    <span class="ot">=</span> <span class="st">"American"</span>,</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Southwestern"</span>                   <span class="ot">=</span> <span class="st">"American"</span>,</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Cajun"</span>                          <span class="ot">=</span> <span class="st">"American"</span>,</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Creole"</span>                         <span class="ot">=</span> <span class="st">"American"</span>,</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Creole/Cajun"</span>                   <span class="ot">=</span> <span class="st">"American"</span>,</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Hawaiian"</span>                       <span class="ot">=</span> <span class="st">"American"</span>, <span class="co"># Poke è spesso fast casual</span></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>  <span class="co"># MERGE RICHIESTI:</span></span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Seafood"</span>                        <span class="ot">=</span> <span class="st">"American"</span>, <span class="co"># Unito ad American</span></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Jewish/Kosher"</span>                  <span class="ot">=</span> <span class="st">"American"</span>, <span class="co"># Unito ad American (stile Deli)</span></span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>  <span class="co"># --- CAFE, DELI, BAKERY &amp; DESSERTS (Include Sandwiches e Salads) ---</span></span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Coffee/Tea"</span>                     <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Bakery Products/Desserts"</span>       <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Donuts"</span>                         <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Frozen Desserts"</span>                <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Pancakes/Waffles"</span>               <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Nuts/Confectionary"</span>             <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Fruits/Vegetables"</span>              <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
+<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Spostati qui come richiesto:</span></span>
+<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Sandwiches"</span>                     <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
+<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Sandwiches/Salads/Mixed Buffet"</span> <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
+<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Salads"</span>                         <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
+<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Soups/Salads/Sandwiches"</span>        <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
+<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Soups"</span>                          <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
+<span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Juice, Smoothies, Fruit Salads"</span> <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
+<span id="cb9-39"><a href="#cb9-39" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Bagels/Pretzels"</span>                <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
+<span id="cb9-40"><a href="#cb9-40" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Bottled Beverages"</span>              <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
+<span id="cb9-41"><a href="#cb9-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-42"><a href="#cb9-42" aria-hidden="true" tabindex="-1"></a>  <span class="co"># --- ASIAN ---</span></span>
+<span id="cb9-43"><a href="#cb9-43" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Chinese"</span>                        <span class="ot">=</span> <span class="st">"Asian"</span>,</span>
+<span id="cb9-44"><a href="#cb9-44" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Japanese"</span>                       <span class="ot">=</span> <span class="st">"Asian"</span>,</span>
+<span id="cb9-45"><a href="#cb9-45" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Asian/Asian Fusion"</span>             <span class="ot">=</span> <span class="st">"Asian"</span>,</span>
+<span id="cb9-46"><a href="#cb9-46" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Korean"</span>                         <span class="ot">=</span> <span class="st">"Asian"</span>,</span>
+<span id="cb9-47"><a href="#cb9-47" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Thai"</span>                           <span class="ot">=</span> <span class="st">"Asian"</span>,</span>
+<span id="cb9-48"><a href="#cb9-48" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Southeast Asian"</span>                <span class="ot">=</span> <span class="st">"Asian"</span>,</span>
+<span id="cb9-49"><a href="#cb9-49" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Bangladeshi"</span>                    <span class="ot">=</span> <span class="st">"Asian"</span>,</span>
+<span id="cb9-50"><a href="#cb9-50" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Filipino"</span>                       <span class="ot">=</span> <span class="st">"Asian"</span>,</span>
+<span id="cb9-51"><a href="#cb9-51" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Pakistani"</span>                      <span class="ot">=</span> <span class="st">"Asian"</span>,</span>
+<span id="cb9-52"><a href="#cb9-52" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Chinese/Japanese"</span>               <span class="ot">=</span> <span class="st">"Asian"</span>,</span>
+<span id="cb9-53"><a href="#cb9-53" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Chinese/Cuban"</span>                  <span class="ot">=</span> <span class="st">"Asian"</span>,</span>
+<span id="cb9-54"><a href="#cb9-54" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Indonesian"</span>                     <span class="ot">=</span> <span class="st">"Asian"</span>,</span>
+<span id="cb9-55"><a href="#cb9-55" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Afghan"</span>                         <span class="ot">=</span> <span class="st">"Asian"</span>,</span>
+<span id="cb9-56"><a href="#cb9-56" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb9-57"><a href="#cb9-57" aria-hidden="true" tabindex="-1"></a>  <span class="co"># --- LATIN AMERICAN ---</span></span>
+<span id="cb9-58"><a href="#cb9-58" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Mexican"</span>                        <span class="ot">=</span> <span class="st">"Latin American"</span>,</span>
+<span id="cb9-59"><a href="#cb9-59" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Latin American"</span>                 <span class="ot">=</span> <span class="st">"Latin American"</span>,</span>
+<span id="cb9-60"><a href="#cb9-60" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Caribbean"</span>                      <span class="ot">=</span> <span class="st">"Latin American"</span>,</span>
+<span id="cb9-61"><a href="#cb9-61" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Tex-Mex"</span>                        <span class="ot">=</span> <span class="st">"Latin American"</span>,</span>
+<span id="cb9-62"><a href="#cb9-62" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Peruvian"</span>                       <span class="ot">=</span> <span class="st">"Latin American"</span>,</span>
+<span id="cb9-63"><a href="#cb9-63" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Brazilian"</span>                      <span class="ot">=</span> <span class="st">"Latin American"</span>,</span>
+<span id="cb9-64"><a href="#cb9-64" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Chilean"</span>                        <span class="ot">=</span> <span class="st">"Latin American"</span>,</span>
+<span id="cb9-65"><a href="#cb9-65" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Chimichurri"</span>                    <span class="ot">=</span> <span class="st">"Latin American"</span>,</span>
+<span id="cb9-66"><a href="#cb9-66" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb9-67"><a href="#cb9-67" aria-hidden="true" tabindex="-1"></a>  <span class="co"># --- ITALIAN (Include Pizza) ---</span></span>
+<span id="cb9-68"><a href="#cb9-68" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Pizza"</span>                          <span class="ot">=</span> <span class="st">"Italian"</span>,</span>
+<span id="cb9-69"><a href="#cb9-69" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Italian"</span>                        <span class="ot">=</span> <span class="st">"Italian"</span>,</span>
+<span id="cb9-70"><a href="#cb9-70" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb9-71"><a href="#cb9-71" aria-hidden="true" tabindex="-1"></a>  <span class="co"># --- EUROPEAN (Spagnola, Est Europa, ecc.) ---</span></span>
+<span id="cb9-72"><a href="#cb9-72" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Spanish"</span>                        <span class="ot">=</span> <span class="st">"European"</span>,</span>
+<span id="cb9-73"><a href="#cb9-73" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Irish"</span>                          <span class="ot">=</span> <span class="st">"European"</span>,</span>
+<span id="cb9-74"><a href="#cb9-74" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Eastern European"</span>               <span class="ot">=</span> <span class="st">"European"</span>,</span>
+<span id="cb9-75"><a href="#cb9-75" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Russian"</span>                        <span class="ot">=</span> <span class="st">"European"</span>,</span>
+<span id="cb9-76"><a href="#cb9-76" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Polish"</span>                         <span class="ot">=</span> <span class="st">"European"</span>,</span>
+<span id="cb9-77"><a href="#cb9-77" aria-hidden="true" tabindex="-1"></a>  <span class="st">"German"</span>                         <span class="ot">=</span> <span class="st">"European"</span>,</span>
+<span id="cb9-78"><a href="#cb9-78" aria-hidden="true" tabindex="-1"></a>  <span class="st">"English"</span>                        <span class="ot">=</span> <span class="st">"European"</span>,</span>
+<span id="cb9-79"><a href="#cb9-79" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Tapas"</span>                          <span class="ot">=</span> <span class="st">"European"</span>,</span>
+<span id="cb9-80"><a href="#cb9-80" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Portuguese"</span>                     <span class="ot">=</span> <span class="st">"European"</span>,</span>
+<span id="cb9-81"><a href="#cb9-81" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Czech"</span>                          <span class="ot">=</span> <span class="st">"European"</span>,</span>
+<span id="cb9-82"><a href="#cb9-82" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Scandinavian"</span>                   <span class="ot">=</span> <span class="st">"European"</span>,</span>
+<span id="cb9-83"><a href="#cb9-83" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Basque"</span>                         <span class="ot">=</span> <span class="st">"European"</span>,</span>
+<span id="cb9-84"><a href="#cb9-84" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Armenian"</span>                       <span class="ot">=</span> <span class="st">"European"</span>,</span>
+<span id="cb9-85"><a href="#cb9-85" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-86"><a href="#cb9-86" aria-hidden="true" tabindex="-1"></a>  <span class="co"># --- FRENCH ---</span></span>
+<span id="cb9-87"><a href="#cb9-87" aria-hidden="true" tabindex="-1"></a>  <span class="st">"French"</span>                         <span class="ot">=</span> <span class="st">"French"</span>,</span>
+<span id="cb9-88"><a href="#cb9-88" aria-hidden="true" tabindex="-1"></a>  <span class="st">"New French"</span>                     <span class="ot">=</span> <span class="st">"French"</span>,</span>
+<span id="cb9-89"><a href="#cb9-89" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Haute Cuisine"</span>                  <span class="ot">=</span> <span class="st">"French"</span>,</span>
+<span id="cb9-90"><a href="#cb9-90" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-91"><a href="#cb9-91" aria-hidden="true" tabindex="-1"></a>  <span class="co"># --- MEDITERRANEAN / MIDDLE EASTERN ---</span></span>
+<span id="cb9-92"><a href="#cb9-92" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Mediterranean"</span>                  <span class="ot">=</span> <span class="st">"Mediterranean/Middle Eastern"</span>,</span>
+<span id="cb9-93"><a href="#cb9-93" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Middle Eastern"</span>                 <span class="ot">=</span> <span class="st">"Mediterranean/Middle Eastern"</span>,</span>
+<span id="cb9-94"><a href="#cb9-94" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Greek"</span>                          <span class="ot">=</span> <span class="st">"Mediterranean/Middle Eastern"</span>,</span>
+<span id="cb9-95"><a href="#cb9-95" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Turkish"</span>                        <span class="ot">=</span> <span class="st">"Mediterranean/Middle Eastern"</span>,</span>
+<span id="cb9-96"><a href="#cb9-96" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Falafel"</span>                        <span class="ot">=</span> <span class="st">"Mediterranean/Middle Eastern"</span>,</span>
+<span id="cb9-97"><a href="#cb9-97" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Egyptian"</span>                       <span class="ot">=</span> <span class="st">"Mediterranean/Middle Eastern"</span>,</span>
+<span id="cb9-98"><a href="#cb9-98" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Moroccan"</span>                       <span class="ot">=</span> <span class="st">"Mediterranean/Middle Eastern"</span>,</span>
+<span id="cb9-99"><a href="#cb9-99" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Lebanese"</span>                       <span class="ot">=</span> <span class="st">"Mediterranean/Middle Eastern"</span>,</span>
+<span id="cb9-100"><a href="#cb9-100" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Iranian"</span>                        <span class="ot">=</span> <span class="st">"Mediterranean/Middle Eastern"</span>,</span>
+<span id="cb9-101"><a href="#cb9-101" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-102"><a href="#cb9-102" aria-hidden="true" tabindex="-1"></a>  <span class="co"># --- INDIAN ---</span></span>
+<span id="cb9-103"><a href="#cb9-103" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Indian"</span>                         <span class="ot">=</span> <span class="st">"Indian"</span>,</span>
+<span id="cb9-104"><a href="#cb9-104" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-105"><a href="#cb9-105" aria-hidden="true" tabindex="-1"></a>  <span class="co"># --- OTHER ---</span></span>
+<span id="cb9-106"><a href="#cb9-106" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Other"</span>                          <span class="ot">=</span> <span class="st">"Other"</span>,</span>
+<span id="cb9-107"><a href="#cb9-107" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Fusion"</span>                         <span class="ot">=</span> <span class="st">"Other"</span>,</span>
+<span id="cb9-108"><a href="#cb9-108" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Australian"</span>                     <span class="ot">=</span> <span class="st">"Other"</span>,</span>
+<span id="cb9-109"><a href="#cb9-109" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Polynesian"</span>                     <span class="ot">=</span> <span class="st">"Other"</span>,</span>
+<span id="cb9-110"><a href="#cb9-110" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Not Listed/Not Applicable"</span>      <span class="ot">=</span> <span class="st">"Other"</span>,</span>
+<span id="cb9-111"><a href="#cb9-111" aria-hidden="true" tabindex="-1"></a>  <span class="st">"African"</span>                        <span class="ot">=</span> <span class="st">"Other"</span>,</span>
+<span id="cb9-112"><a href="#cb9-112" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Ethiopian"</span>                      <span class="ot">=</span> <span class="st">"Other"</span></span>
+<span id="cb9-113"><a href="#cb9-113" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-114"><a href="#cb9-114" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-115"><a href="#cb9-115" aria-hidden="true" tabindex="-1"></a><span class="co"># mapping</span></span>
+<span id="cb9-116"><a href="#cb9-116" aria-hidden="true" tabindex="-1"></a>restaurants <span class="ot">&lt;-</span> restaurants <span class="sc">%&gt;%</span></span>
+<span id="cb9-117"><a href="#cb9-117" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb9-118"><a href="#cb9-118" aria-hidden="true" tabindex="-1"></a>    <span class="at">cuisine_group =</span> mapping[CUISINE_DESCRIPTION],</span>
+<span id="cb9-119"><a href="#cb9-119" aria-hidden="true" tabindex="-1"></a>    <span class="at">cuisine_group =</span> <span class="fu">ifelse</span>(<span class="fu">is.na</span>(cuisine_group), <span class="st">"Other"</span>, cuisine_group)</span>
+<span id="cb9-120"><a href="#cb9-120" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb9-121"><a href="#cb9-121" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-122"><a href="#cb9-122" aria-hidden="true" tabindex="-1"></a><span class="co"># check</span></span>
+<span id="cb9-123"><a href="#cb9-123" aria-hidden="true" tabindex="-1"></a>restaurants <span class="sc">%&gt;%</span></span>
+<span id="cb9-124"><a href="#cb9-124" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(cuisine_group, <span class="at">sort =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 10 × 2
+   cuisine_group                    n
+   &lt;chr&gt;                        &lt;int&gt;
+ 1 American                      7188
+ 2 Cafe/Deli/Bakery              5548
+ 3 Asian                         4715
+ 4 Latin American                3206
+ 5 Italian                       2543
+ 6 European                      1023
+ 7 Other                          970
+ 8 Mediterranean/Middle Eastern   780
+ 9 Indian                         315
+10 French                         304</code></pre>
+</div>
+</div>
 
 
 </section>

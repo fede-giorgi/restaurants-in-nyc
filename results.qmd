@@ -1,7 +1,215 @@
 # Results
 
+```{r}
+# Load libraries
+library(tidyverse) 
+library(ggdensity)
+library(lubridate)
+library(dplyr)
+library(purrr)
+
+options(dplyr.width = Inf)
+```
 
 ## Geospatial Density Map
+
+```{r}
+# Load the dataset with specific column types
+df <- read_csv("C:/Users/famig/OneDrive/Scuola/0 Columbia University/1 Fall 2025/STAT GR5702 - Exploratory Data Analysis & Visualization/EDAV/DOHMH_New_York_City_Restaurant_Inspection_Results.csv",
+                 col_types = cols(
+    .default = col_character(),      # Set default to character for safety
+    CAMIS = col_double(),            # Unique ID
+    ZIPCODE = col_character(),       # Important: Keep as character to prevent stripping leading zeros
+    SCORE = col_double(),
+    Latitude = col_double(),
+    Longitude = col_double(),
+    `Community Board` = col_double(),
+    BIN = col_double(),
+    BBL = col_double()
+  ),
+  show_col_types = FALSE
+ ) %>%
+  # Clean up date columns immediately using lubridate
+  mutate(`INSPECTION DATE` = mdy(`INSPECTION DATE`),
+         `GRADE DATE` = mdy(`GRADE DATE`),
+         `RECORD DATE` = mdy(`RECORD DATE`))
+```
+
+```{r}
+# Helper functions to handle NAs safely
+last_non_null <- function(x) {
+  x <- x[!is.na(x)]
+  if (length(x) == 0) return(NA)
+  tail(x, 1)
+}
+
+safe_mean <- function(x) {
+  x <- x[!is.na(x)]
+  if (length(x) == 0) return(NA_real_)
+  mean(x)
+}
+
+# --- DATA TRANSFORMATION ---
+restaurants <- df %>%
+  # 1. TIME FILTER BEFORE GROUPING
+  # Remove dummy dates (1900) and focus on relevant recent data (post-2015)
+  filter(`INSPECTION DATE` >= ymd("2015-01-01")) %>% 
+  
+  arrange(`INSPECTION DATE`) %>%
+  group_by(CAMIS) %>%
+  summarise(
+    DBA      = first(na.omit(DBA)),    # Takes the first non-null name
+    BORO     = first(na.omit(BORO)),
+    BUILDING = first(BUILDING),
+    STREET   = first(STREET),
+    ZIPCODE  = first(ZIPCODE),
+    PHONE    = first(PHONE),
+    CUISINE_DESCRIPTION = first(`CUISINE DESCRIPTION`),
+    
+    # 2. ROBUST COORDINATES
+    # If the first value is NA, the mean retrieves the location across inspections
+    Latitude  = mean(Latitude, na.rm = TRUE), 
+    Longitude = mean(Longitude, na.rm = TRUE),
+
+    n_inspections    = n_distinct(`INSPECTION DATE`, na.rm = TRUE),
+    first_inspection = min(`INSPECTION DATE`, na.rm = TRUE),
+    last_inspection  = max(`INSPECTION DATE`, na.rm = TRUE),
+
+    mean_score = safe_mean(SCORE),
+    # Mean score provides a good summary of overall hygiene performance
+    
+    last_grade = last_non_null(GRADE),
+
+    # Create a list of all unique violations ever received by the restaurant
+    violations = list(unique(na.omit(`VIOLATION DESCRIPTION`))),
+    .groups = "drop"
+  )
+```
+
+
+```{r}
+mapping <- c(
+  # --- AMERICAN (Include ora Seafood, Jewish/Kosher e varianti regionali) ---
+  "American"                       = "American",
+  "New American"                   = "American",
+  "Chicken"                        = "American",
+  "Hamburgers"                     = "American",
+  "Steakhouse"                     = "American",
+  "Barbecue"                       = "American",
+  "Hotdogs"                        = "American",
+  "Hotdogs/Pretzels"               = "American",
+  "Soul Food"                      = "American",
+  "Continental"                    = "American",
+  "Californian"                    = "American",
+  "Southwestern"                   = "American",
+  "Cajun"                          = "American",
+  "Creole"                         = "American",
+  "Creole/Cajun"                   = "American",
+  "Hawaiian"                       = "American", # Poke è spesso fast casual
+  
+  # MERGE RICHIESTI:
+  "Seafood"                        = "American", # Unito ad American
+  "Jewish/Kosher"                  = "American", # Unito ad American (stile Deli)
+
+  # --- CAFE, DELI, BAKERY & DESSERTS (Include Sandwiches e Salads) ---
+  "Coffee/Tea"                     = "Cafe/Deli/Bakery",
+  "Bakery Products/Desserts"       = "Cafe/Deli/Bakery",
+  "Donuts"                         = "Cafe/Deli/Bakery",
+  "Frozen Desserts"                = "Cafe/Deli/Bakery",
+  "Pancakes/Waffles"               = "Cafe/Deli/Bakery",
+  "Nuts/Confectionary"             = "Cafe/Deli/Bakery",
+  "Fruits/Vegetables"              = "Cafe/Deli/Bakery",
+  # Spostati qui come richiesto:
+  "Sandwiches"                     = "Cafe/Deli/Bakery",
+  "Sandwiches/Salads/Mixed Buffet" = "Cafe/Deli/Bakery",
+  "Salads"                         = "Cafe/Deli/Bakery",
+  "Soups/Salads/Sandwiches"        = "Cafe/Deli/Bakery",
+  "Soups"                          = "Cafe/Deli/Bakery",
+  "Juice, Smoothies, Fruit Salads" = "Cafe/Deli/Bakery",
+  "Bagels/Pretzels"                = "Cafe/Deli/Bakery",
+  "Bottled Beverages"              = "Cafe/Deli/Bakery",
+
+  # --- ASIAN ---
+  "Chinese"                        = "Asian",
+  "Japanese"                       = "Asian",
+  "Asian/Asian Fusion"             = "Asian",
+  "Korean"                         = "Asian",
+  "Thai"                           = "Asian",
+  "Southeast Asian"                = "Asian",
+  "Bangladeshi"                    = "Asian",
+  "Filipino"                       = "Asian",
+  "Pakistani"                      = "Asian",
+  "Chinese/Japanese"               = "Asian",
+  "Chinese/Cuban"                  = "Asian",
+  "Indonesian"                     = "Asian",
+  "Afghan"                         = "Asian",
+  
+  # --- LATIN AMERICAN ---
+  "Mexican"                        = "Latin American",
+  "Latin American"                 = "Latin American",
+  "Caribbean"                      = "Latin American",
+  "Tex-Mex"                        = "Latin American",
+  "Peruvian"                       = "Latin American",
+  "Brazilian"                      = "Latin American",
+  "Chilean"                        = "Latin American",
+  "Chimichurri"                    = "Latin American",
+  
+  # --- ITALIAN (Include Pizza) ---
+  "Pizza"                          = "Italian",
+  "Italian"                        = "Italian",
+  
+  # --- EUROPEAN (Spagnola, Est Europa, ecc.) ---
+  "Spanish"                        = "European",
+  "Irish"                          = "European",
+  "Eastern European"               = "European",
+  "Russian"                        = "European",
+  "Polish"                         = "European",
+  "German"                         = "European",
+  "English"                        = "European",
+  "Tapas"                          = "European",
+  "Portuguese"                     = "European",
+  "Czech"                          = "European",
+  "Scandinavian"                   = "European",
+  "Basque"                         = "European",
+  "Armenian"                       = "European",
+
+  # --- FRENCH ---
+  "French"                         = "French",
+  "New French"                     = "French",
+  "Haute Cuisine"                  = "French",
+
+  # --- MEDITERRANEAN / MIDDLE EASTERN ---
+  "Mediterranean"                  = "Mediterranean/Middle Eastern",
+  "Middle Eastern"                 = "Mediterranean/Middle Eastern",
+  "Greek"                          = "Mediterranean/Middle Eastern",
+  "Turkish"                        = "Mediterranean/Middle Eastern",
+  "Falafel"                        = "Mediterranean/Middle Eastern",
+  "Egyptian"                       = "Mediterranean/Middle Eastern",
+  "Moroccan"                       = "Mediterranean/Middle Eastern",
+  "Lebanese"                       = "Mediterranean/Middle Eastern",
+  "Iranian"                        = "Mediterranean/Middle Eastern",
+
+  # --- INDIAN ---
+  "Indian"                         = "Indian",
+
+  # --- OTHER ---
+  "Other"                          = "Other",
+  "Fusion"                         = "Other",
+  "Australian"                     = "Other",
+  "Polynesian"                     = "Other",
+  "Not Listed/Not Applicable"      = "Other",
+  "African"                        = "Other",
+  "Ethiopian"                      = "Other"
+)
+
+# mapping
+restaurants <- restaurants %>%
+  mutate(
+    cuisine_group = mapping[CUISINE_DESCRIPTION],
+    cuisine_group = ifelse(is.na(cuisine_group), "Other", cuisine_group)
+  )
+```
+
 
 ```{r}
 library(sf)
