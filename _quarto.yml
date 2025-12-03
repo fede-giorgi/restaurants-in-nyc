@@ -8,11 +8,11 @@ execute:
   message: false
 
 book:
-  title: "YOUR PROJECT TITLE"
+  title: "Restaurants in NYC"
   author:
     - AUTHOR1 (UNI1)
     - AUTHOR2 (UNI2)
-  repo-url: https://github.com/YOUR_GITHUB_ACCOUNT/REPO_NAME
+  repo-url: https://github.com/fede-giorgi/restaurants-in-nyc
   date: today
   page-footer:
     right: |
