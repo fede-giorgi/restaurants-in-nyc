@@ -10,8 +10,8 @@ execute:
 book:
   title: "Restaurants in NYC"
   author:
-    - AUTHOR1 (UNI1)
-    - AUTHOR2 (UNI2)
+    - Federico Giorgi(fg2617)
+    - Rencong Jiang(rj2798)
   repo-url: https://github.com/fede-giorgi/restaurants-in-nyc
   date: today
   page-footer:
