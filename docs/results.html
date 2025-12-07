@@ -180,8 +180,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
    
   <ul>
   <li><a href="#setup-and-data-loading" id="toc-setup-and-data-loading" class="nav-link active" data-scroll-target="#setup-and-data-loading"><span class="header-section-number">3.1</span> Setup and Data loading</a></li>
-  <li><a href="#geospatial-density-map" id="toc-geospatial-density-map" class="nav-link" data-scroll-target="#geospatial-density-map"><span class="header-section-number">3.2</span> Geospatial Density Map</a></li>
-  <li><a href="#hygiene-score-analysis" id="toc-hygiene-score-analysis" class="nav-link" data-scroll-target="#hygiene-score-analysis"><span class="header-section-number">3.3</span> Hygiene Score Analysis</a></li>
+  <li><a href="#the-culinary-landscape-mapping-nycs-flavors" id="toc-the-culinary-landscape-mapping-nycs-flavors" class="nav-link" data-scroll-target="#the-culinary-landscape-mapping-nycs-flavors"><span class="header-section-number">3.2</span> The Culinary Landscape: Mapping NYC’s Flavors</a></li>
+  <li><a href="#the-peoples-verdict-hype-vs.-quality" id="toc-the-peoples-verdict-hype-vs.-quality" class="nav-link" data-scroll-target="#the-peoples-verdict-hype-vs.-quality"><span class="header-section-number">3.3</span> The People’s Verdict: Hype vs.&nbsp;Quality</a></li>
+  <li><a href="#kitchen-confidential-inside-the-hygiene-scores" id="toc-kitchen-confidential-inside-the-hygiene-scores" class="nav-link" data-scroll-target="#kitchen-confidential-inside-the-hygiene-scores"><span class="header-section-number">3.4</span> Kitchen Confidential: Inside the Hygiene Scores</a></li>
+  <li><a href="#the-taste-safety-paradox-does-grime-pay" id="toc-the-taste-safety-paradox-does-grime-pay" class="nav-link" data-scroll-target="#the-taste-safety-paradox-does-grime-pay"><span class="header-section-number">3.5</span> The Taste-Safety Paradox: Does Grime Pay?</a></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/fede-giorgi/restaurants-in-nyc/edit/main/results.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/fede-giorgi/restaurants-in-nyc/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
@@ -343,144 +345,193 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-128"><a href="#cb1-128" aria-hidden="true" tabindex="-1"></a>  )</span>
 <span id="cb1-129"><a href="#cb1-129" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-130"><a href="#cb1-130" aria-hidden="true" tabindex="-1"></a><span class="co"># ==============================================================================</span></span>
-<span id="cb1-131"><a href="#cb1-131" aria-hidden="true" tabindex="-1"></a><span class="co"># CUISINE CATEGORIZATION MAPPING </span></span>
+<span id="cb1-131"><a href="#cb1-131" aria-hidden="true" tabindex="-1"></a><span class="co"># DATA AGGREGATION AT RESTAURANT LEVEL </span></span>
 <span id="cb1-132"><a href="#cb1-132" aria-hidden="true" tabindex="-1"></a><span class="co"># ==============================================================================</span></span>
 <span id="cb1-133"><a href="#cb1-133" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-134"><a href="#cb1-134" aria-hidden="true" tabindex="-1"></a>mapping <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
-<span id="cb1-135"><a href="#cb1-135" aria-hidden="true" tabindex="-1"></a>  <span class="co"># --- AMERICAN (Include ora Seafood, Jewish/Kosher e varianti regionali) ---</span></span>
-<span id="cb1-136"><a href="#cb1-136" aria-hidden="true" tabindex="-1"></a>  <span class="st">"American"</span>                       <span class="ot">=</span> <span class="st">"American"</span>,</span>
-<span id="cb1-137"><a href="#cb1-137" aria-hidden="true" tabindex="-1"></a>  <span class="st">"New American"</span>                   <span class="ot">=</span> <span class="st">"American"</span>,</span>
-<span id="cb1-138"><a href="#cb1-138" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Chicken"</span>                        <span class="ot">=</span> <span class="st">"American"</span>,</span>
-<span id="cb1-139"><a href="#cb1-139" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Hamburgers"</span>                     <span class="ot">=</span> <span class="st">"American"</span>,</span>
-<span id="cb1-140"><a href="#cb1-140" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Steakhouse"</span>                     <span class="ot">=</span> <span class="st">"American"</span>,</span>
-<span id="cb1-141"><a href="#cb1-141" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Barbecue"</span>                       <span class="ot">=</span> <span class="st">"American"</span>,</span>
-<span id="cb1-142"><a href="#cb1-142" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Hotdogs"</span>                        <span class="ot">=</span> <span class="st">"American"</span>,</span>
-<span id="cb1-143"><a href="#cb1-143" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Hotdogs/Pretzels"</span>               <span class="ot">=</span> <span class="st">"American"</span>,</span>
-<span id="cb1-144"><a href="#cb1-144" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Soul Food"</span>                      <span class="ot">=</span> <span class="st">"American"</span>,</span>
-<span id="cb1-145"><a href="#cb1-145" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Continental"</span>                    <span class="ot">=</span> <span class="st">"American"</span>,</span>
-<span id="cb1-146"><a href="#cb1-146" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Californian"</span>                    <span class="ot">=</span> <span class="st">"American"</span>,</span>
-<span id="cb1-147"><a href="#cb1-147" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Southwestern"</span>                   <span class="ot">=</span> <span class="st">"American"</span>,</span>
-<span id="cb1-148"><a href="#cb1-148" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Cajun"</span>                          <span class="ot">=</span> <span class="st">"American"</span>,</span>
-<span id="cb1-149"><a href="#cb1-149" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Creole"</span>                         <span class="ot">=</span> <span class="st">"American"</span>,</span>
-<span id="cb1-150"><a href="#cb1-150" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Creole/Cajun"</span>                   <span class="ot">=</span> <span class="st">"American"</span>,</span>
-<span id="cb1-151"><a href="#cb1-151" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Hawaiian"</span>                       <span class="ot">=</span> <span class="st">"American"</span>, <span class="co"># Poke è spesso fast casual</span></span>
-<span id="cb1-152"><a href="#cb1-152" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Seafood"</span>                        <span class="ot">=</span> <span class="st">"American"</span>, <span class="co"># Unito ad American</span></span>
-<span id="cb1-153"><a href="#cb1-153" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Jewish/Kosher"</span>                  <span class="ot">=</span> <span class="st">"American"</span>, <span class="co"># Unito ad American (stile Deli)</span></span>
-<span id="cb1-154"><a href="#cb1-154" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-155"><a href="#cb1-155" aria-hidden="true" tabindex="-1"></a>  <span class="co"># --- CAFE, DELI, BAKERY &amp; DESSERTS (Include Sandwiches e Salads) ---</span></span>
-<span id="cb1-156"><a href="#cb1-156" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Coffee/Tea"</span>                     <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
-<span id="cb1-157"><a href="#cb1-157" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Bakery Products/Desserts"</span>       <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
-<span id="cb1-158"><a href="#cb1-158" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Donuts"</span>                         <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
-<span id="cb1-159"><a href="#cb1-159" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Frozen Desserts"</span>                <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
-<span id="cb1-160"><a href="#cb1-160" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Pancakes/Waffles"</span>               <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
-<span id="cb1-161"><a href="#cb1-161" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Nuts/Confectionary"</span>             <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
-<span id="cb1-162"><a href="#cb1-162" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Fruits/Vegetables"</span>              <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
-<span id="cb1-163"><a href="#cb1-163" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Spostati qui come richiesto:</span></span>
-<span id="cb1-164"><a href="#cb1-164" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Sandwiches"</span>                     <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
-<span id="cb1-165"><a href="#cb1-165" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Sandwiches/Salads/Mixed Buffet"</span> <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
-<span id="cb1-166"><a href="#cb1-166" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Salads"</span>                         <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
-<span id="cb1-167"><a href="#cb1-167" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Soups/Salads/Sandwiches"</span>        <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
-<span id="cb1-168"><a href="#cb1-168" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Soups"</span>                          <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
-<span id="cb1-169"><a href="#cb1-169" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Juice, Smoothies, Fruit Salads"</span> <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
-<span id="cb1-170"><a href="#cb1-170" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Bagels/Pretzels"</span>                <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
-<span id="cb1-171"><a href="#cb1-171" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Bottled Beverages"</span>              <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
-<span id="cb1-172"><a href="#cb1-172" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-173"><a href="#cb1-173" aria-hidden="true" tabindex="-1"></a>  <span class="co"># --- ASIAN ---</span></span>
-<span id="cb1-174"><a href="#cb1-174" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Chinese"</span>                        <span class="ot">=</span> <span class="st">"Asian"</span>,</span>
-<span id="cb1-175"><a href="#cb1-175" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Japanese"</span>                       <span class="ot">=</span> <span class="st">"Asian"</span>,</span>
-<span id="cb1-176"><a href="#cb1-176" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Asian/Asian Fusion"</span>             <span class="ot">=</span> <span class="st">"Asian"</span>,</span>
-<span id="cb1-177"><a href="#cb1-177" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Korean"</span>                         <span class="ot">=</span> <span class="st">"Asian"</span>,</span>
-<span id="cb1-178"><a href="#cb1-178" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Thai"</span>                           <span class="ot">=</span> <span class="st">"Asian"</span>,</span>
-<span id="cb1-179"><a href="#cb1-179" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Southeast Asian"</span>                <span class="ot">=</span> <span class="st">"Asian"</span>,</span>
-<span id="cb1-180"><a href="#cb1-180" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Bangladeshi"</span>                    <span class="ot">=</span> <span class="st">"Asian"</span>,</span>
-<span id="cb1-181"><a href="#cb1-181" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Filipino"</span>                       <span class="ot">=</span> <span class="st">"Asian"</span>,</span>
-<span id="cb1-182"><a href="#cb1-182" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Pakistani"</span>                      <span class="ot">=</span> <span class="st">"Asian"</span>,</span>
-<span id="cb1-183"><a href="#cb1-183" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Chinese/Japanese"</span>               <span class="ot">=</span> <span class="st">"Asian"</span>,</span>
-<span id="cb1-184"><a href="#cb1-184" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Chinese/Cuban"</span>                  <span class="ot">=</span> <span class="st">"Asian"</span>,</span>
-<span id="cb1-185"><a href="#cb1-185" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Indonesian"</span>                     <span class="ot">=</span> <span class="st">"Asian"</span>,</span>
-<span id="cb1-186"><a href="#cb1-186" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Afghan"</span>                         <span class="ot">=</span> <span class="st">"Asian"</span>,</span>
-<span id="cb1-187"><a href="#cb1-187" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb1-188"><a href="#cb1-188" aria-hidden="true" tabindex="-1"></a>  <span class="co"># --- LATIN AMERICAN ---</span></span>
-<span id="cb1-189"><a href="#cb1-189" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Mexican"</span>                        <span class="ot">=</span> <span class="st">"Latin American"</span>,</span>
-<span id="cb1-190"><a href="#cb1-190" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Latin American"</span>                 <span class="ot">=</span> <span class="st">"Latin American"</span>,</span>
-<span id="cb1-191"><a href="#cb1-191" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Caribbean"</span>                      <span class="ot">=</span> <span class="st">"Latin American"</span>,</span>
-<span id="cb1-192"><a href="#cb1-192" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Tex-Mex"</span>                        <span class="ot">=</span> <span class="st">"Latin American"</span>,</span>
-<span id="cb1-193"><a href="#cb1-193" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Peruvian"</span>                       <span class="ot">=</span> <span class="st">"Latin American"</span>,</span>
-<span id="cb1-194"><a href="#cb1-194" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Brazilian"</span>                      <span class="ot">=</span> <span class="st">"Latin American"</span>,</span>
-<span id="cb1-195"><a href="#cb1-195" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Chilean"</span>                        <span class="ot">=</span> <span class="st">"Latin American"</span>,</span>
-<span id="cb1-196"><a href="#cb1-196" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Chimichurri"</span>                    <span class="ot">=</span> <span class="st">"Latin American"</span>,</span>
-<span id="cb1-197"><a href="#cb1-197" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb1-198"><a href="#cb1-198" aria-hidden="true" tabindex="-1"></a>  <span class="co"># --- ITALIAN (Include Pizza) ---</span></span>
-<span id="cb1-199"><a href="#cb1-199" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Pizza"</span>                          <span class="ot">=</span> <span class="st">"Italian"</span>,</span>
-<span id="cb1-200"><a href="#cb1-200" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Italian"</span>                        <span class="ot">=</span> <span class="st">"Italian"</span>,</span>
-<span id="cb1-201"><a href="#cb1-201" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb1-202"><a href="#cb1-202" aria-hidden="true" tabindex="-1"></a>  <span class="co"># --- EUROPEAN (Spagnola, Est Europa, ecc.) ---</span></span>
-<span id="cb1-203"><a href="#cb1-203" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Spanish"</span>                        <span class="ot">=</span> <span class="st">"European"</span>,</span>
-<span id="cb1-204"><a href="#cb1-204" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Irish"</span>                          <span class="ot">=</span> <span class="st">"European"</span>,</span>
-<span id="cb1-205"><a href="#cb1-205" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Eastern European"</span>               <span class="ot">=</span> <span class="st">"European"</span>,</span>
-<span id="cb1-206"><a href="#cb1-206" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Russian"</span>                        <span class="ot">=</span> <span class="st">"European"</span>,</span>
-<span id="cb1-207"><a href="#cb1-207" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Polish"</span>                         <span class="ot">=</span> <span class="st">"European"</span>,</span>
-<span id="cb1-208"><a href="#cb1-208" aria-hidden="true" tabindex="-1"></a>  <span class="st">"German"</span>                         <span class="ot">=</span> <span class="st">"European"</span>,</span>
-<span id="cb1-209"><a href="#cb1-209" aria-hidden="true" tabindex="-1"></a>  <span class="st">"English"</span>                        <span class="ot">=</span> <span class="st">"European"</span>,</span>
-<span id="cb1-210"><a href="#cb1-210" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Tapas"</span>                          <span class="ot">=</span> <span class="st">"European"</span>,</span>
-<span id="cb1-211"><a href="#cb1-211" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Portuguese"</span>                     <span class="ot">=</span> <span class="st">"European"</span>,</span>
-<span id="cb1-212"><a href="#cb1-212" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Czech"</span>                          <span class="ot">=</span> <span class="st">"European"</span>,</span>
-<span id="cb1-213"><a href="#cb1-213" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Scandinavian"</span>                   <span class="ot">=</span> <span class="st">"European"</span>,</span>
-<span id="cb1-214"><a href="#cb1-214" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Basque"</span>                         <span class="ot">=</span> <span class="st">"European"</span>,</span>
-<span id="cb1-215"><a href="#cb1-215" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Armenian"</span>                       <span class="ot">=</span> <span class="st">"European"</span>,</span>
-<span id="cb1-216"><a href="#cb1-216" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-217"><a href="#cb1-217" aria-hidden="true" tabindex="-1"></a>  <span class="co"># --- FRENCH ---</span></span>
-<span id="cb1-218"><a href="#cb1-218" aria-hidden="true" tabindex="-1"></a>  <span class="st">"French"</span>                         <span class="ot">=</span> <span class="st">"French"</span>,</span>
-<span id="cb1-219"><a href="#cb1-219" aria-hidden="true" tabindex="-1"></a>  <span class="st">"New French"</span>                     <span class="ot">=</span> <span class="st">"French"</span>,</span>
-<span id="cb1-220"><a href="#cb1-220" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Haute Cuisine"</span>                  <span class="ot">=</span> <span class="st">"French"</span>,</span>
+<span id="cb1-134"><a href="#cb1-134" aria-hidden="true" tabindex="-1"></a><span class="co"># Helper functions to handle NAs safely</span></span>
+<span id="cb1-135"><a href="#cb1-135" aria-hidden="true" tabindex="-1"></a>last_non_null <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
+<span id="cb1-136"><a href="#cb1-136" aria-hidden="true" tabindex="-1"></a>  x <span class="ot">&lt;-</span> x[<span class="sc">!</span><span class="fu">is.na</span>(x)]</span>
+<span id="cb1-137"><a href="#cb1-137" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">length</span>(x) <span class="sc">==</span> <span class="dv">0</span>) <span class="fu">return</span>(<span class="cn">NA</span>)</span>
+<span id="cb1-138"><a href="#cb1-138" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tail</span>(x, <span class="dv">1</span>)</span>
+<span id="cb1-139"><a href="#cb1-139" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-140"><a href="#cb1-140" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-141"><a href="#cb1-141" aria-hidden="true" tabindex="-1"></a>safe_mean <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
+<span id="cb1-142"><a href="#cb1-142" aria-hidden="true" tabindex="-1"></a>  x <span class="ot">&lt;-</span> x[<span class="sc">!</span><span class="fu">is.na</span>(x)]</span>
+<span id="cb1-143"><a href="#cb1-143" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">length</span>(x) <span class="sc">==</span> <span class="dv">0</span>) <span class="fu">return</span>(<span class="cn">NA_real_</span>)</span>
+<span id="cb1-144"><a href="#cb1-144" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mean</span>(x)</span>
+<span id="cb1-145"><a href="#cb1-145" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-146"><a href="#cb1-146" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-147"><a href="#cb1-147" aria-hidden="true" tabindex="-1"></a>restaurants <span class="ot">&lt;-</span> df <span class="sc">|&gt;</span></span>
+<span id="cb1-148"><a href="#cb1-148" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Remove dummy dates (1900) and focus on relevant recent data (post-2015)</span></span>
+<span id="cb1-149"><a href="#cb1-149" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="st">`</span><span class="at">INSPECTION DATE</span><span class="st">`</span> <span class="sc">&gt;=</span> <span class="fu">ymd</span>(<span class="st">"2015-01-01"</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb1-150"><a href="#cb1-150" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb1-151"><a href="#cb1-151" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="st">`</span><span class="at">INSPECTION DATE</span><span class="st">`</span>) <span class="sc">|&gt;</span></span>
+<span id="cb1-152"><a href="#cb1-152" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(CAMIS) <span class="sc">|&gt;</span></span>
+<span id="cb1-153"><a href="#cb1-153" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb1-154"><a href="#cb1-154" aria-hidden="true" tabindex="-1"></a>    <span class="at">DBA      =</span> <span class="fu">first</span>(<span class="fu">na.omit</span>(DBA)),</span>
+<span id="cb1-155"><a href="#cb1-155" aria-hidden="true" tabindex="-1"></a>    <span class="at">BORO     =</span> <span class="fu">first</span>(<span class="fu">na.omit</span>(BORO)),</span>
+<span id="cb1-156"><a href="#cb1-156" aria-hidden="true" tabindex="-1"></a>    <span class="at">BUILDING =</span> <span class="fu">first</span>(BUILDING),</span>
+<span id="cb1-157"><a href="#cb1-157" aria-hidden="true" tabindex="-1"></a>    <span class="at">STREET   =</span> <span class="fu">first</span>(STREET),</span>
+<span id="cb1-158"><a href="#cb1-158" aria-hidden="true" tabindex="-1"></a>    <span class="at">ZIPCODE  =</span> <span class="fu">first</span>(ZIPCODE),</span>
+<span id="cb1-159"><a href="#cb1-159" aria-hidden="true" tabindex="-1"></a>    <span class="at">PHONE    =</span> <span class="fu">first</span>(PHONE),</span>
+<span id="cb1-160"><a href="#cb1-160" aria-hidden="true" tabindex="-1"></a>    <span class="at">CUISINE_DESCRIPTION =</span> <span class="fu">first</span>(<span class="st">`</span><span class="at">CUISINE DESCRIPTION</span><span class="st">`</span>),</span>
+<span id="cb1-161"><a href="#cb1-161" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb1-162"><a href="#cb1-162" aria-hidden="true" tabindex="-1"></a>    <span class="co"># If the first value is NA, the mean retrieves the location across inspections</span></span>
+<span id="cb1-163"><a href="#cb1-163" aria-hidden="true" tabindex="-1"></a>    <span class="at">Latitude  =</span> <span class="fu">mean</span>(Latitude, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), </span>
+<span id="cb1-164"><a href="#cb1-164" aria-hidden="true" tabindex="-1"></a>    <span class="at">Longitude =</span> <span class="fu">mean</span>(Longitude, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb1-165"><a href="#cb1-165" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-166"><a href="#cb1-166" aria-hidden="true" tabindex="-1"></a>    <span class="at">n_inspections    =</span> <span class="fu">n_distinct</span>(<span class="st">`</span><span class="at">INSPECTION DATE</span><span class="st">`</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb1-167"><a href="#cb1-167" aria-hidden="true" tabindex="-1"></a>    <span class="at">first_inspection =</span> <span class="fu">min</span>(<span class="st">`</span><span class="at">INSPECTION DATE</span><span class="st">`</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb1-168"><a href="#cb1-168" aria-hidden="true" tabindex="-1"></a>    <span class="at">last_inspection  =</span> <span class="fu">max</span>(<span class="st">`</span><span class="at">INSPECTION DATE</span><span class="st">`</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb1-169"><a href="#cb1-169" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-170"><a href="#cb1-170" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_score =</span> <span class="fu">safe_mean</span>(SCORE),</span>
+<span id="cb1-171"><a href="#cb1-171" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Mean score provides a good summary of overall hygiene performance</span></span>
+<span id="cb1-172"><a href="#cb1-172" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb1-173"><a href="#cb1-173" aria-hidden="true" tabindex="-1"></a>    <span class="at">last_grade =</span> <span class="fu">last_non_null</span>(GRADE),</span>
+<span id="cb1-174"><a href="#cb1-174" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-175"><a href="#cb1-175" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Create a list of all unique violations ever received by the restaurant</span></span>
+<span id="cb1-176"><a href="#cb1-176" aria-hidden="true" tabindex="-1"></a>    <span class="at">violations =</span> <span class="fu">list</span>(<span class="fu">unique</span>(<span class="fu">na.omit</span>(<span class="st">`</span><span class="at">VIOLATION DESCRIPTION</span><span class="st">`</span>))),</span>
+<span id="cb1-177"><a href="#cb1-177" aria-hidden="true" tabindex="-1"></a>    <span class="at">.groups =</span> <span class="st">"drop"</span></span>
+<span id="cb1-178"><a href="#cb1-178" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb1-179"><a href="#cb1-179" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-180"><a href="#cb1-180" aria-hidden="true" tabindex="-1"></a><span class="co"># ==============================================================================</span></span>
+<span id="cb1-181"><a href="#cb1-181" aria-hidden="true" tabindex="-1"></a><span class="co"># CUISINE CATEGORIZATION MAPPING </span></span>
+<span id="cb1-182"><a href="#cb1-182" aria-hidden="true" tabindex="-1"></a><span class="co"># ==============================================================================</span></span>
+<span id="cb1-183"><a href="#cb1-183" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-184"><a href="#cb1-184" aria-hidden="true" tabindex="-1"></a>mapping <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb1-185"><a href="#cb1-185" aria-hidden="true" tabindex="-1"></a>  <span class="co"># --- AMERICAN ---</span></span>
+<span id="cb1-186"><a href="#cb1-186" aria-hidden="true" tabindex="-1"></a>  <span class="st">"American"</span>                       <span class="ot">=</span> <span class="st">"American"</span>,</span>
+<span id="cb1-187"><a href="#cb1-187" aria-hidden="true" tabindex="-1"></a>  <span class="st">"New American"</span>                   <span class="ot">=</span> <span class="st">"American"</span>,</span>
+<span id="cb1-188"><a href="#cb1-188" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Chicken"</span>                        <span class="ot">=</span> <span class="st">"American"</span>,</span>
+<span id="cb1-189"><a href="#cb1-189" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Hamburgers"</span>                     <span class="ot">=</span> <span class="st">"American"</span>,</span>
+<span id="cb1-190"><a href="#cb1-190" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Steakhouse"</span>                     <span class="ot">=</span> <span class="st">"American"</span>,</span>
+<span id="cb1-191"><a href="#cb1-191" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Barbecue"</span>                       <span class="ot">=</span> <span class="st">"American"</span>,</span>
+<span id="cb1-192"><a href="#cb1-192" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Hotdogs"</span>                        <span class="ot">=</span> <span class="st">"American"</span>,</span>
+<span id="cb1-193"><a href="#cb1-193" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Hotdogs/Pretzels"</span>               <span class="ot">=</span> <span class="st">"American"</span>,</span>
+<span id="cb1-194"><a href="#cb1-194" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Soul Food"</span>                      <span class="ot">=</span> <span class="st">"American"</span>,</span>
+<span id="cb1-195"><a href="#cb1-195" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Continental"</span>                    <span class="ot">=</span> <span class="st">"American"</span>,</span>
+<span id="cb1-196"><a href="#cb1-196" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Californian"</span>                    <span class="ot">=</span> <span class="st">"American"</span>,</span>
+<span id="cb1-197"><a href="#cb1-197" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Southwestern"</span>                   <span class="ot">=</span> <span class="st">"American"</span>,</span>
+<span id="cb1-198"><a href="#cb1-198" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Cajun"</span>                          <span class="ot">=</span> <span class="st">"American"</span>,</span>
+<span id="cb1-199"><a href="#cb1-199" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Creole"</span>                         <span class="ot">=</span> <span class="st">"American"</span>,</span>
+<span id="cb1-200"><a href="#cb1-200" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Creole/Cajun"</span>                   <span class="ot">=</span> <span class="st">"American"</span>,</span>
+<span id="cb1-201"><a href="#cb1-201" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Hawaiian"</span>                       <span class="ot">=</span> <span class="st">"American"</span>,</span>
+<span id="cb1-202"><a href="#cb1-202" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Seafood"</span>                        <span class="ot">=</span> <span class="st">"American"</span>,</span>
+<span id="cb1-203"><a href="#cb1-203" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Jewish/Kosher"</span>                  <span class="ot">=</span> <span class="st">"American"</span>,</span>
+<span id="cb1-204"><a href="#cb1-204" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-205"><a href="#cb1-205" aria-hidden="true" tabindex="-1"></a>  <span class="co"># --- CAFE, DELI, BAKERY &amp; DESSERTS ---</span></span>
+<span id="cb1-206"><a href="#cb1-206" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Coffee/Tea"</span>                     <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
+<span id="cb1-207"><a href="#cb1-207" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Bakery Products/Desserts"</span>       <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
+<span id="cb1-208"><a href="#cb1-208" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Donuts"</span>                         <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
+<span id="cb1-209"><a href="#cb1-209" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Frozen Desserts"</span>                <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
+<span id="cb1-210"><a href="#cb1-210" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Pancakes/Waffles"</span>               <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
+<span id="cb1-211"><a href="#cb1-211" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Nuts/Confectionary"</span>             <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
+<span id="cb1-212"><a href="#cb1-212" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Fruits/Vegetables"</span>              <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
+<span id="cb1-213"><a href="#cb1-213" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Sandwiches"</span>                     <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
+<span id="cb1-214"><a href="#cb1-214" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Sandwiches/Salads/Mixed Buffet"</span> <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
+<span id="cb1-215"><a href="#cb1-215" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Salads"</span>                         <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
+<span id="cb1-216"><a href="#cb1-216" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Soups/Salads/Sandwiches"</span>        <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
+<span id="cb1-217"><a href="#cb1-217" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Soups"</span>                          <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
+<span id="cb1-218"><a href="#cb1-218" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Juice, Smoothies, Fruit Salads"</span> <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
+<span id="cb1-219"><a href="#cb1-219" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Bagels/Pretzels"</span>                <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
+<span id="cb1-220"><a href="#cb1-220" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Bottled Beverages"</span>              <span class="ot">=</span> <span class="st">"Cafe/Deli/Bakery"</span>,</span>
 <span id="cb1-221"><a href="#cb1-221" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-222"><a href="#cb1-222" aria-hidden="true" tabindex="-1"></a>  <span class="co"># --- MEDITERRANEAN / MIDDLE EASTERN ---</span></span>
-<span id="cb1-223"><a href="#cb1-223" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Mediterranean"</span>                  <span class="ot">=</span> <span class="st">"Mediterranean/Middle Eastern"</span>,</span>
-<span id="cb1-224"><a href="#cb1-224" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Middle Eastern"</span>                 <span class="ot">=</span> <span class="st">"Mediterranean/Middle Eastern"</span>,</span>
-<span id="cb1-225"><a href="#cb1-225" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Greek"</span>                          <span class="ot">=</span> <span class="st">"Mediterranean/Middle Eastern"</span>,</span>
-<span id="cb1-226"><a href="#cb1-226" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Turkish"</span>                        <span class="ot">=</span> <span class="st">"Mediterranean/Middle Eastern"</span>,</span>
-<span id="cb1-227"><a href="#cb1-227" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Falafel"</span>                        <span class="ot">=</span> <span class="st">"Mediterranean/Middle Eastern"</span>,</span>
-<span id="cb1-228"><a href="#cb1-228" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Egyptian"</span>                       <span class="ot">=</span> <span class="st">"Mediterranean/Middle Eastern"</span>,</span>
-<span id="cb1-229"><a href="#cb1-229" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Moroccan"</span>                       <span class="ot">=</span> <span class="st">"Mediterranean/Middle Eastern"</span>,</span>
-<span id="cb1-230"><a href="#cb1-230" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Lebanese"</span>                       <span class="ot">=</span> <span class="st">"Mediterranean/Middle Eastern"</span>,</span>
-<span id="cb1-231"><a href="#cb1-231" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Iranian"</span>                        <span class="ot">=</span> <span class="st">"Mediterranean/Middle Eastern"</span>,</span>
-<span id="cb1-232"><a href="#cb1-232" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-233"><a href="#cb1-233" aria-hidden="true" tabindex="-1"></a>  <span class="co"># --- INDIAN ---</span></span>
-<span id="cb1-234"><a href="#cb1-234" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Indian"</span>                         <span class="ot">=</span> <span class="st">"Indian"</span>,</span>
-<span id="cb1-235"><a href="#cb1-235" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-236"><a href="#cb1-236" aria-hidden="true" tabindex="-1"></a>  <span class="co"># --- OTHER ---</span></span>
-<span id="cb1-237"><a href="#cb1-237" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Other"</span>                          <span class="ot">=</span> <span class="st">"Other"</span>,</span>
-<span id="cb1-238"><a href="#cb1-238" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Fusion"</span>                         <span class="ot">=</span> <span class="st">"Other"</span>,</span>
-<span id="cb1-239"><a href="#cb1-239" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Australian"</span>                     <span class="ot">=</span> <span class="st">"Other"</span>,</span>
-<span id="cb1-240"><a href="#cb1-240" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Polynesian"</span>                     <span class="ot">=</span> <span class="st">"Other"</span>,</span>
-<span id="cb1-241"><a href="#cb1-241" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Not Listed/Not Applicable"</span>      <span class="ot">=</span> <span class="st">"Other"</span>,</span>
-<span id="cb1-242"><a href="#cb1-242" aria-hidden="true" tabindex="-1"></a>  <span class="st">"African"</span>                        <span class="ot">=</span> <span class="st">"Other"</span>,</span>
-<span id="cb1-243"><a href="#cb1-243" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Ethiopian"</span>                      <span class="ot">=</span> <span class="st">"Other"</span></span>
-<span id="cb1-244"><a href="#cb1-244" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb1-245"><a href="#cb1-245" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-246"><a href="#cb1-246" aria-hidden="true" tabindex="-1"></a><span class="co"># mapping</span></span>
-<span id="cb1-247"><a href="#cb1-247" aria-hidden="true" tabindex="-1"></a>restaurants <span class="ot">&lt;-</span> restaurants <span class="sc">|&gt;</span></span>
-<span id="cb1-248"><a href="#cb1-248" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb1-249"><a href="#cb1-249" aria-hidden="true" tabindex="-1"></a>    <span class="at">cuisine_group =</span> mapping[CUISINE_DESCRIPTION],</span>
-<span id="cb1-250"><a href="#cb1-250" aria-hidden="true" tabindex="-1"></a>    <span class="at">cuisine_group =</span> <span class="fu">ifelse</span>(<span class="fu">is.na</span>(cuisine_group), <span class="st">"Other"</span>, cuisine_group)</span>
-<span id="cb1-251"><a href="#cb1-251" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-222"><a href="#cb1-222" aria-hidden="true" tabindex="-1"></a>  <span class="co"># --- ASIAN ---</span></span>
+<span id="cb1-223"><a href="#cb1-223" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Chinese"</span>                        <span class="ot">=</span> <span class="st">"Asian"</span>,</span>
+<span id="cb1-224"><a href="#cb1-224" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Japanese"</span>                       <span class="ot">=</span> <span class="st">"Asian"</span>,</span>
+<span id="cb1-225"><a href="#cb1-225" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Asian/Asian Fusion"</span>             <span class="ot">=</span> <span class="st">"Asian"</span>,</span>
+<span id="cb1-226"><a href="#cb1-226" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Korean"</span>                         <span class="ot">=</span> <span class="st">"Asian"</span>,</span>
+<span id="cb1-227"><a href="#cb1-227" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Thai"</span>                           <span class="ot">=</span> <span class="st">"Asian"</span>,</span>
+<span id="cb1-228"><a href="#cb1-228" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Southeast Asian"</span>                <span class="ot">=</span> <span class="st">"Asian"</span>,</span>
+<span id="cb1-229"><a href="#cb1-229" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Bangladeshi"</span>                    <span class="ot">=</span> <span class="st">"Asian"</span>,</span>
+<span id="cb1-230"><a href="#cb1-230" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Filipino"</span>                       <span class="ot">=</span> <span class="st">"Asian"</span>,</span>
+<span id="cb1-231"><a href="#cb1-231" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Pakistani"</span>                      <span class="ot">=</span> <span class="st">"Asian"</span>,</span>
+<span id="cb1-232"><a href="#cb1-232" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Chinese/Japanese"</span>               <span class="ot">=</span> <span class="st">"Asian"</span>,</span>
+<span id="cb1-233"><a href="#cb1-233" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Chinese/Cuban"</span>                  <span class="ot">=</span> <span class="st">"Asian"</span>,</span>
+<span id="cb1-234"><a href="#cb1-234" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Indonesian"</span>                     <span class="ot">=</span> <span class="st">"Asian"</span>,</span>
+<span id="cb1-235"><a href="#cb1-235" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Afghan"</span>                         <span class="ot">=</span> <span class="st">"Asian"</span>,</span>
+<span id="cb1-236"><a href="#cb1-236" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb1-237"><a href="#cb1-237" aria-hidden="true" tabindex="-1"></a>  <span class="co"># --- LATIN AMERICAN ---</span></span>
+<span id="cb1-238"><a href="#cb1-238" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Mexican"</span>                        <span class="ot">=</span> <span class="st">"Latin American"</span>,</span>
+<span id="cb1-239"><a href="#cb1-239" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Latin American"</span>                 <span class="ot">=</span> <span class="st">"Latin American"</span>,</span>
+<span id="cb1-240"><a href="#cb1-240" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Caribbean"</span>                      <span class="ot">=</span> <span class="st">"Latin American"</span>,</span>
+<span id="cb1-241"><a href="#cb1-241" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Tex-Mex"</span>                        <span class="ot">=</span> <span class="st">"Latin American"</span>,</span>
+<span id="cb1-242"><a href="#cb1-242" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Peruvian"</span>                       <span class="ot">=</span> <span class="st">"Latin American"</span>,</span>
+<span id="cb1-243"><a href="#cb1-243" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Brazilian"</span>                      <span class="ot">=</span> <span class="st">"Latin American"</span>,</span>
+<span id="cb1-244"><a href="#cb1-244" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Chilean"</span>                        <span class="ot">=</span> <span class="st">"Latin American"</span>,</span>
+<span id="cb1-245"><a href="#cb1-245" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Chimichurri"</span>                    <span class="ot">=</span> <span class="st">"Latin American"</span>,</span>
+<span id="cb1-246"><a href="#cb1-246" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb1-247"><a href="#cb1-247" aria-hidden="true" tabindex="-1"></a>  <span class="co"># --- ITALIAN ---</span></span>
+<span id="cb1-248"><a href="#cb1-248" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Pizza"</span>                          <span class="ot">=</span> <span class="st">"Italian"</span>,</span>
+<span id="cb1-249"><a href="#cb1-249" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Italian"</span>                        <span class="ot">=</span> <span class="st">"Italian"</span>,</span>
+<span id="cb1-250"><a href="#cb1-250" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb1-251"><a href="#cb1-251" aria-hidden="true" tabindex="-1"></a>  <span class="co"># --- EUROPEAN ---</span></span>
+<span id="cb1-252"><a href="#cb1-252" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Spanish"</span>                        <span class="ot">=</span> <span class="st">"European"</span>,</span>
+<span id="cb1-253"><a href="#cb1-253" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Irish"</span>                          <span class="ot">=</span> <span class="st">"European"</span>,</span>
+<span id="cb1-254"><a href="#cb1-254" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Eastern European"</span>               <span class="ot">=</span> <span class="st">"European"</span>,</span>
+<span id="cb1-255"><a href="#cb1-255" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Russian"</span>                        <span class="ot">=</span> <span class="st">"European"</span>,</span>
+<span id="cb1-256"><a href="#cb1-256" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Polish"</span>                         <span class="ot">=</span> <span class="st">"European"</span>,</span>
+<span id="cb1-257"><a href="#cb1-257" aria-hidden="true" tabindex="-1"></a>  <span class="st">"German"</span>                         <span class="ot">=</span> <span class="st">"European"</span>,</span>
+<span id="cb1-258"><a href="#cb1-258" aria-hidden="true" tabindex="-1"></a>  <span class="st">"English"</span>                        <span class="ot">=</span> <span class="st">"European"</span>,</span>
+<span id="cb1-259"><a href="#cb1-259" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Tapas"</span>                          <span class="ot">=</span> <span class="st">"European"</span>,</span>
+<span id="cb1-260"><a href="#cb1-260" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Portuguese"</span>                     <span class="ot">=</span> <span class="st">"European"</span>,</span>
+<span id="cb1-261"><a href="#cb1-261" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Czech"</span>                          <span class="ot">=</span> <span class="st">"European"</span>,</span>
+<span id="cb1-262"><a href="#cb1-262" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Scandinavian"</span>                   <span class="ot">=</span> <span class="st">"European"</span>,</span>
+<span id="cb1-263"><a href="#cb1-263" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Basque"</span>                         <span class="ot">=</span> <span class="st">"European"</span>,</span>
+<span id="cb1-264"><a href="#cb1-264" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Armenian"</span>                       <span class="ot">=</span> <span class="st">"European"</span>,</span>
+<span id="cb1-265"><a href="#cb1-265" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-266"><a href="#cb1-266" aria-hidden="true" tabindex="-1"></a>  <span class="co"># --- FRENCH ---</span></span>
+<span id="cb1-267"><a href="#cb1-267" aria-hidden="true" tabindex="-1"></a>  <span class="st">"French"</span>                         <span class="ot">=</span> <span class="st">"French"</span>,</span>
+<span id="cb1-268"><a href="#cb1-268" aria-hidden="true" tabindex="-1"></a>  <span class="st">"New French"</span>                     <span class="ot">=</span> <span class="st">"French"</span>,</span>
+<span id="cb1-269"><a href="#cb1-269" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Haute Cuisine"</span>                  <span class="ot">=</span> <span class="st">"French"</span>,</span>
+<span id="cb1-270"><a href="#cb1-270" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-271"><a href="#cb1-271" aria-hidden="true" tabindex="-1"></a>  <span class="co"># --- MEDITERRANEAN / MIDDLE EASTERN ---</span></span>
+<span id="cb1-272"><a href="#cb1-272" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Mediterranean"</span>                  <span class="ot">=</span> <span class="st">"Mediterranean/Middle Eastern"</span>,</span>
+<span id="cb1-273"><a href="#cb1-273" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Middle Eastern"</span>                 <span class="ot">=</span> <span class="st">"Mediterranean/Middle Eastern"</span>,</span>
+<span id="cb1-274"><a href="#cb1-274" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Greek"</span>                          <span class="ot">=</span> <span class="st">"Mediterranean/Middle Eastern"</span>,</span>
+<span id="cb1-275"><a href="#cb1-275" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Turkish"</span>                        <span class="ot">=</span> <span class="st">"Mediterranean/Middle Eastern"</span>,</span>
+<span id="cb1-276"><a href="#cb1-276" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Falafel"</span>                        <span class="ot">=</span> <span class="st">"Mediterranean/Middle Eastern"</span>,</span>
+<span id="cb1-277"><a href="#cb1-277" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Egyptian"</span>                       <span class="ot">=</span> <span class="st">"Mediterranean/Middle Eastern"</span>,</span>
+<span id="cb1-278"><a href="#cb1-278" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Moroccan"</span>                       <span class="ot">=</span> <span class="st">"Mediterranean/Middle Eastern"</span>,</span>
+<span id="cb1-279"><a href="#cb1-279" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Lebanese"</span>                       <span class="ot">=</span> <span class="st">"Mediterranean/Middle Eastern"</span>,</span>
+<span id="cb1-280"><a href="#cb1-280" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Iranian"</span>                        <span class="ot">=</span> <span class="st">"Mediterranean/Middle Eastern"</span>,</span>
+<span id="cb1-281"><a href="#cb1-281" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-282"><a href="#cb1-282" aria-hidden="true" tabindex="-1"></a>  <span class="co"># --- INDIAN ---</span></span>
+<span id="cb1-283"><a href="#cb1-283" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Indian"</span>                         <span class="ot">=</span> <span class="st">"Indian"</span>,</span>
+<span id="cb1-284"><a href="#cb1-284" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-285"><a href="#cb1-285" aria-hidden="true" tabindex="-1"></a>  <span class="co"># --- OTHER ---</span></span>
+<span id="cb1-286"><a href="#cb1-286" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Other"</span>                          <span class="ot">=</span> <span class="st">"Other"</span>,</span>
+<span id="cb1-287"><a href="#cb1-287" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Fusion"</span>                         <span class="ot">=</span> <span class="st">"Other"</span>,</span>
+<span id="cb1-288"><a href="#cb1-288" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Australian"</span>                     <span class="ot">=</span> <span class="st">"Other"</span>,</span>
+<span id="cb1-289"><a href="#cb1-289" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Polynesian"</span>                     <span class="ot">=</span> <span class="st">"Other"</span>,</span>
+<span id="cb1-290"><a href="#cb1-290" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Not Listed/Not Applicable"</span>      <span class="ot">=</span> <span class="st">"Other"</span>,</span>
+<span id="cb1-291"><a href="#cb1-291" aria-hidden="true" tabindex="-1"></a>  <span class="st">"African"</span>                        <span class="ot">=</span> <span class="st">"Other"</span>,</span>
+<span id="cb1-292"><a href="#cb1-292" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Ethiopian"</span>                      <span class="ot">=</span> <span class="st">"Other"</span></span>
+<span id="cb1-293"><a href="#cb1-293" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-294"><a href="#cb1-294" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-295"><a href="#cb1-295" aria-hidden="true" tabindex="-1"></a><span class="co"># mapping</span></span>
+<span id="cb1-296"><a href="#cb1-296" aria-hidden="true" tabindex="-1"></a>restaurants <span class="ot">&lt;-</span> restaurants <span class="sc">|&gt;</span></span>
+<span id="cb1-297"><a href="#cb1-297" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb1-298"><a href="#cb1-298" aria-hidden="true" tabindex="-1"></a>    <span class="at">cuisine_group =</span> mapping[CUISINE_DESCRIPTION],</span>
+<span id="cb1-299"><a href="#cb1-299" aria-hidden="true" tabindex="-1"></a>    <span class="at">cuisine_group =</span> <span class="fu">ifelse</span>(<span class="fu">is.na</span>(cuisine_group), <span class="st">"Other"</span>, cuisine_group)</span>
+<span id="cb1-300"><a href="#cb1-300" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 </section>
-<section id="geospatial-density-map" class="level2" data-number="3.2">
-<h2 data-number="3.2" class="anchored" data-anchor-id="geospatial-density-map"><span class="header-section-number">3.2</span> Geospatial Density Map</h2>
+<section id="the-culinary-landscape-mapping-nycs-flavors" class="level2" data-number="3.2">
+<h2 data-number="3.2" class="anchored" data-anchor-id="the-culinary-landscape-mapping-nycs-flavors"><span class="header-section-number">3.2</span> The Culinary Landscape: Mapping NYC’s Flavors</h2>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Load the Shapefile</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>nyc_map <span class="ot">&lt;-</span> <span class="fu">read_sf</span>(<span class="st">"C:/Users/famig/OneDrive/Scuola/0 Columbia University/1 Fall 2025/STAT GR5702 - Exploratory Data Analysis &amp; Visualization/EDAV/nybb_25d/nybb.shp"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>nyc_map <span class="ot">&lt;-</span> <span class="fu">read_sf</span>(<span class="st">"C:/Users/famig/OneDrive/Scuola/0 Columbia University/1 Fall 2025/STAT GR5702 - Exploratory Data Analysis &amp; Visualization/EDAV/nybb_25d/nybb.shp"</span>) <span class="sc">|&gt;</span></span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="at">crs =</span> <span class="dv">4326</span>)</span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Data Cleaning for Geospatial Analysis</span></span>
 <span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="co"># We create a specific subset to avoid overwriting the main dataset accidentally</span></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>restaurants_geo <span class="ot">&lt;-</span> restaurants <span class="sc">%&gt;%</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>restaurants_geo <span class="ot">&lt;-</span> restaurants <span class="sc">|&gt;</span></span>
 <span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="co"># IMPORTANT FIX: Remove rows without coordinates</span></span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(Longitude) <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">is.na</span>(Latitude)) <span class="sc">%&gt;%</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(Longitude) <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">is.na</span>(Latitude)) <span class="sc">|&gt;</span></span>
 <span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Remove valid but incorrect coordinates (e.g., 0,0 points that land in the ocean)</span></span>
 <span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(Longitude <span class="sc">&lt;</span> <span class="sc">-</span><span class="dv">70</span> <span class="sc">&amp;</span> Latitude <span class="sc">&gt;</span> <span class="dv">35</span>)</span>
 <span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a></span>
@@ -537,8 +588,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p>By overlaying restaurant coordinates on the NYC borough map using Kernel Density Estimation (KDE), we can visualize the spatial clustering of different culinary traditions. This visualization moves beyond simple counts to reveal distinct cultural enclaves (such as the three major “Chinatowns” in Manhattan, Queens, and Brooklyn) versus cuisines that are uniformly distributed across the city, such as American or Cafe/Deli establishments.</p>
 </section>
-<section id="hygiene-score-analysis" class="level2" data-number="3.3">
-<h2 data-number="3.3" class="anchored" data-anchor-id="hygiene-score-analysis"><span class="header-section-number">3.3</span> Hygiene Score Analysis</h2>
+<section id="the-peoples-verdict-hype-vs.-quality" class="level2" data-number="3.3">
+<h2 data-number="3.3" class="anchored" data-anchor-id="the-peoples-verdict-hype-vs.-quality"><span class="header-section-number">3.3</span> The People’s Verdict: Hype vs.&nbsp;Quality</h2>
+</section>
+<section id="kitchen-confidential-inside-the-hygiene-scores" class="level2" data-number="3.4">
+<h2 data-number="3.4" class="anchored" data-anchor-id="kitchen-confidential-inside-the-hygiene-scores"><span class="header-section-number">3.4</span> Kitchen Confidential: Inside the Hygiene Scores</h2>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -546,7 +600,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Filter data for the plot</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>score_analysis <span class="ot">&lt;-</span> restaurants <span class="sc">%&gt;%</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>score_analysis <span class="ot">&lt;-</span> restaurants <span class="sc">|&gt;</span></span>
 <span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Remove extreme outliers (scores &gt; 60 are rare) for better readability</span></span>
 <span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(mean_score <span class="sc">&lt;</span> <span class="dv">60</span>)</span>
 <span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a></span>
@@ -585,6 +639,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <p>We utilized a combined violin and boxplot to analyze the distribution of hygiene scores across cuisine groups. The red dashed line at a score of 13 marks the critical threshold for an “A” grade; the plot reveals that while the median scores for most cuisines fall within the “A” range, certain groups (such as Latin American and Asian cuisines) exhibit a wider distribution with a longer tail of higher scores, suggesting higher variance in compliance or inspection complexity.</p>
+</section>
+<section id="the-taste-safety-paradox-does-grime-pay" class="level2" data-number="3.5">
+<h2 data-number="3.5" class="anchored" data-anchor-id="the-taste-safety-paradox-does-grime-pay"><span class="header-section-number">3.5</span> The Taste-Safety Paradox: Does Grime Pay?</h2>
 
 
 </section>

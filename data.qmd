@@ -91,57 +91,59 @@ df <- read_csv(url_dati,
          `RECORD DATE` = mdy(`RECORD DATE`))
 ```
 
-## Description
+## Description and Dataset Overview
 
-We have curated and merged 2 data sets for this project: 1.
-"DOHMH New York City Restaurant Inspection Results" maintained by the NYC Department of Health and Mental Hygiene (DOHMH), serves as the official record of food safety compliance for restaurants and college cafeterias in New York City.
-2.
-"Yelp Open Dataset" is maintained by Yelp and contains information about public ratings, reviews, and the current state of the restaurant (closed/open).
+We have curated and merged 2 data sets for this project:
 
-### Dataset Overview
+1.  **DOHMH New York City Restaurant Inspection Results** maintained by the NYC Department of Health and Mental Hygiene (DOHMH), serves as the official record of food safety compliance for restaurants and college cafeterias in New York City.
 
-**DOHMH New York City Restaurant Inspection Results** - Source: NYC Department of Health and Mental Hygiene (DOHMH) https://data.cityofnewyork.us/Health/DOHMH-New-York-City-Restaurant-Inspection-Results/43nn-pn8j/about_data.
+    -   Source: NYC Department of Health and Mental Hygiene (DOHMH)
 
--   Scope: The dataset contains details on every sustained or initially cited violation from inspections conducted at active restaurants.
+    -   Scope: The dataset contains details on every sustained or initially cited violation from inspections conducted at active restaurants.
 
--   Update Frequency: The data on NYC Open Data is updated daily, meaning it reflects near real-time inspection activities, and we obtained the dataset on 10/30/2025.
+    -   Update Frequency: The data on NYC Open Data is updated daily, meaning it reflects near real-time inspection activities, and we obtained the dataset on 10/30/2025.
 
-**Key Variables:** - `CAMIS` (Record ID): This is a unique 10-digit integer identifier for each restaurant for the DOHMH dataset.
+    **Key Variables:** - `CAMIS` (Record ID): This is a unique 10-digit integer identifier for each restaurant for the DOHMH dataset.
 
--   `SCORE`: The total deficiency points calculated at the end of an inspection.
-    Points are added for every violation found, thus a score of 0 is perfect, while a higher score means worse condition.
+    -   `SCORE`: The total deficiency points calculated at the end of an inspection.
+        Points are added for every violation found, thus a score of 0 is perfect, while a higher score means worse condition.
 
--   `GRADE`: The letter grade derived from the score.
+    -   `GRADE`: The letter grade derived from the score.
 
-    A: 0 to 13 points.
-    B: 14 to 27 points.
-    C: 28 or more points.
-    Some are graded as 'P' (Pending) or 'N' (Not yet graded).
+        A: 0 to 13 points.
+        B: 14 to 27 points.
+        C: 28 or more points.
+        Some are graded as 'P' (Pending) or 'N' (Not yet graded).
 
--   `VIOLATIONS`: This field describes the specific health code infractions.
+    -   `VIOLATIONS`: This field describes the specific health code infractions.
 
--   `first_inspection`and `last_inspection`: Indicates the time period of inspections done on each restaurant.
+    -   `first_inspection`and `last_inspection`: Indicates the time period of inspections done on each restaurant.
 
-**Yelp open data set** - Source: Yelp Fusion API (Business Search Endpoint).
-- Scope: This dataset provides business-level metadata and aggregate public sentiment metrics for New York City restaurants that correspond to the facilities listed in the DOHMH dataset.
-- Methodology: Data was retrieved by querying the Yelp API using unique phone numbers extracted from the non-repeated DOHMH restaurant list.
-- Integration: This dataset is designed to be joined with the DOHMH inspection records using the phone number as the common key.
+2.  **Yelp open data set** is maintained by Yelp and contains information about public ratings, reviews, and the current state of the restaurant (closed/open).
+
+    -   Source: Yelp Fusion API (Business Search Endpoint).
+
+    -   Scope: This dataset provides business-level metadata and aggregate public sentiment metrics for New York City restaurants that correspond to the facilities listed in the DOHMH dataset.
+
+    -   Methodology: Data was retrieved by querying the Yelp API using unique phone numbers extracted from the non-repeated DOHMH restaurant list.
+
+    -   Integration: This dataset is designed to be joined with the DOHMH inspection records using the phone number as the common key.
 
 **Key Variables:** - query_phone (Join Key): The phone number used to query the API.
 This serves as the primary foreign key to link this sentiment data back to the specific restaurant records in the DOHMH dataset.
 
--   yelp_rating: The aggregate star rating of the restaurant on a scale of 1 to 5.
+-   `yelp_rating`: The aggregate star rating of the restaurant on a scale of 1 to 5.
     This serves as the primary quantitative proxy for "public sentiment" in the correlation analysis.
 
--   review_count: The total number of reviews contributing to the rating.
+-   `review_count`: The total number of reviews contributing to the rating.
     This variable helps weight the significance of the yelp_rating (e.g., distinguishing between a 5-star rating with 2 reviews vs. 200 reviews).
 
--   is_closed: A boolean value (True/False) indicating if the business has been marked as permanently closed on Yelp.
+-   `is_closed`: A boolean value (True/False) indicating if the business has been marked as permanently closed on Yelp.
     This is crucial for filtering out inactive businesses from the final analysis.
 
 ## Missing value analysis
 
-#### DOHMH New York City Restaurant Inspection Results
+### DOHMH New York City Restaurant Inspection Results
 
 ```{r}
 # Calculate percentage of missing values per column
@@ -199,6 +201,40 @@ ggplot(top_patterns, aes(x = variable, y = fct_rev(fct_inorder(row_label)), fill
        fill = "Is Missing?") +
   
   theme_nyc()
+```
+
+
+### Yelp open data set
+
+The Yelp dataset contains no missing values or duplicates, as incomplete records were filtered out during the data extraction process.
+And we joined Yelp's dataset containing rating score,review counts, and open/close status with DOHMN dataset using unique phone numbers of the restaurants rather than address or name because it could be inconsistent or duplicated.
+
+```{r}
+# # 1. Load the Yelp dataset
+# yelp_df <- read_csv("/Users/dian/restaurants-in-nyc/nyc_yelp_matches_FINAL.csv", 
+#                     col_types = cols(
+#                       query_phone = col_character(), 
+#                       .default = col_guess()
+#                     ))
+# 
+# # 2. Prepare the Yelp data for joining
+# yelp_clean <- yelp_df |>
+#   mutate(
+#     phone_match_key = str_sub(as.character(query_phone), -10)
+#   ) |>
+#   distinct(phone_match_key, .keep_all = TRUE) |>
+#   select(-matches("url")) # <--- REMOVES any column containing "url"
+# 
+# # 3. Prepare the DOHMH (restaurants) data for joining
+# restaurants_clean <- restaurants |>
+#   mutate(
+#     phone_match_key = str_sub(str_remove_all(as.character(PHONE), "[^0-9]"), -10)
+#   )
+# 
+# # 4. Join the datasets
+# # Only join the restaurants with yelp data available
+# final_data <- restaurants_clean |>
+#   inner_join(yelp_clean, by = "phone_match_key")
 ```
 
 ## Restaurant-level aggregation and cuisine grouping
@@ -379,37 +415,4 @@ restaurants <- restaurants |>
     cuisine_group = mapping[CUISINE_DESCRIPTION],
     cuisine_group = ifelse(is.na(cuisine_group), "Other", cuisine_group)
   )
-```
-
-#### Yelp open data set
-
-The Yelp dataset contains no missing values or duplicates, as incomplete records were filtered out during the data extraction process.
-And we joined Yelp's dataset containing rating score,review counts, and open/close status with DOHMN dataset using unique phone numbers of the restaurants rather than address or name because it could be inconsistent or duplicated.
-
-```{r}
-# # 1. Load the Yelp dataset
-# yelp_df <- read_csv("/Users/dian/restaurants-in-nyc/nyc_yelp_matches_FINAL.csv", 
-#                     col_types = cols(
-#                       query_phone = col_character(), 
-#                       .default = col_guess()
-#                     ))
-# 
-# # 2. Prepare the Yelp data for joining
-# yelp_clean <- yelp_df |>
-#   mutate(
-#     phone_match_key = str_sub(as.character(query_phone), -10)
-#   ) |>
-#   distinct(phone_match_key, .keep_all = TRUE) |>
-#   select(-matches("url")) # <--- REMOVES any column containing "url"
-# 
-# # 3. Prepare the DOHMH (restaurants) data for joining
-# restaurants_clean <- restaurants |>
-#   mutate(
-#     phone_match_key = str_sub(str_remove_all(as.character(PHONE), "[^0-9]"), -10)
-#   )
-# 
-# # 4. Join the datasets
-# # Only join the restaurants with yelp data available
-# final_data <- restaurants_clean |>
-#   inner_join(yelp_clean, by = "phone_match_key")
 ```
