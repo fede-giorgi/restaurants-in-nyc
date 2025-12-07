@@ -11,11 +11,13 @@ library(purrr)
 options(dplyr.width = Inf)
 ```
 
-## Geospatial Density Map
+## 1. Restaurant diversity and clusters in NYC (cosa si mangia a ny)
+
+### 1.1 Geospatial Density Map
 
 ```{r}
 # Load the dataset with specific column types
-df <- read_csv("C:/Users/famig/OneDrive/Scuola/0 Columbia University/1 Fall 2025/STAT GR5702 - Exploratory Data Analysis & Visualization/EDAV/DOHMH_New_York_City_Restaurant_Inspection_Results.csv",
+df <- read_csv("/Users/dian/Desktop/EDAV FInal Project/DOHMH_New_York_City_Restaurant_Inspection_Results.csv",
                  col_types = cols(
     .default = col_character(),      # Set default to character for safety
     CAMIS = col_double(),            # Unique ID
@@ -28,7 +30,7 @@ df <- read_csv("C:/Users/famig/OneDrive/Scuola/0 Columbia University/1 Fall 2025
     BBL = col_double()
   ),
   show_col_types = FALSE
- ) %>%
+ ) |>
   # Clean up date columns immediately using lubridate
   mutate(`INSPECTION DATE` = mdy(`INSPECTION DATE`),
          `GRADE DATE` = mdy(`GRADE DATE`),
@@ -50,13 +52,13 @@ safe_mean <- function(x) {
 }
 
 # --- DATA TRANSFORMATION ---
-restaurants <- df %>%
+restaurants <- df |>
   # 1. TIME FILTER BEFORE GROUPING
   # Remove dummy dates (1900) and focus on relevant recent data (post-2015)
-  filter(`INSPECTION DATE` >= ymd("2015-01-01")) %>% 
+  filter(`INSPECTION DATE` >= ymd("2015-01-01")) |> 
   
-  arrange(`INSPECTION DATE`) %>%
-  group_by(CAMIS) %>%
+  arrange(`INSPECTION DATE`) |>
+  group_by(CAMIS) |>
   summarise(
     DBA      = first(na.omit(DBA)),    # Takes the first non-null name
     BORO     = first(na.omit(BORO)),
@@ -203,7 +205,7 @@ mapping <- c(
 )
 
 # mapping
-restaurants <- restaurants %>%
+restaurants <- restaurants |>
   mutate(
     cuisine_group = mapping[CUISINE_DESCRIPTION],
     cuisine_group = ifelse(is.na(cuisine_group), "Other", cuisine_group)
@@ -218,14 +220,14 @@ library(ggdensity)
 library(dplyr)
 
 # 1. Load the Shapefile
-nyc_map <- read_sf("C:/Users/famig/OneDrive/Scuola/0 Columbia University/1 Fall 2025/STAT GR5702 - Exploratory Data Analysis & Visualization/EDAV/nybb_25d/nybb.shp") %>%
+nyc_map <- read_sf("/Users/dian/restaurants-in-nyc/nybb_25d/nybb.shp") |>
   st_transform(crs = 4326)
 
 # 2. Data Cleaning for Geospatial Analysis
 # We create a specific subset to avoid overwriting the main dataset accidentally
-restaurants_geo <- restaurants %>%
+restaurants_geo <- restaurants |>
   # IMPORTANT FIX: Remove rows without coordinates
-  filter(!is.na(Longitude) & !is.na(Latitude)) %>%
+  filter(!is.na(Longitude) & !is.na(Latitude)) |>
   # Remove valid but incorrect coordinates (e.g., 0,0 points that land in the ocean)
   filter(Longitude < -70 & Latitude > 35)
 
@@ -267,21 +269,26 @@ ggplot() +
 By overlaying restaurant coordinates on the NYC borough map using Kernel Density Estimation (KDE), we can visualize the spatial clustering of different culinary traditions. This visualization moves beyond simple counts to reveal distinct cultural enclaves (such as the three major "Chinatowns" in Manhattan, Queens, and Brooklyn) versus cuisines that are uniformly distributed across the city, such as American or Cafe/Deli establishments.
 
 
-## Hygiene Score Analysis
+## 2. Consumer preferences (cosa piace mangiare)
+
+
+## 3. Inspection and hygene 
+
+### 3.1 Hygiene Score Analysis based on Cuisine
 
 ```{r}
 library(ggplot2)
 library(dplyr)
 
 # Filter data for the plot
-score_analysis <- restaurants %>%
+score_analysis <- restaurants |>
   # Exclude "Other" to keep the comparison meaningful
-  filter(cuisine_group != "Other") %>%
+  filter(cuisine_group != "Other") |>
   # Remove extreme outliers (scores > 60 are rare) for better readability
   filter(mean_score < 60)
 
 # Combined Boxplot + Violin Plot
-ggplot(score_analysis, aes(x = reorder(cuisine_group, mean_score, FUN = median), y = mean_score)) +
+ggplot(score_analysis, aes(x = reorder(cuisine_group, -mean_score, FUN = median), y = mean_score)) +
   
   # Violin plot (bottom layer): Shows the shape/density of the distribution
   geom_violin(fill = "grey90", color = NA, alpha = 0.5) +
@@ -291,8 +298,15 @@ ggplot(score_analysis, aes(x = reorder(cuisine_group, mean_score, FUN = median),
   
   # Dashed red line at 13 (Threshold for Grade A)
   geom_hline(yintercept = 13, linetype = "dashed", color = "red", linewidth = 0.8) +
-  annotate("text", x = 1, y = 14.5, label = "Grade A Limit (13)", 
-           color = "red", size = 3, hjust = 0) +
+ annotate(
+  "text",
+  x = 0.7,
+  y = 14,
+  label = "Grade A Limit (13)",
+  color = "red",
+  size = 2.5,
+  hjust = 0
+) +
   
   # Flip coordinates for readable labels
   coord_flip() + 
@@ -303,9 +317,95 @@ ggplot(score_analysis, aes(x = reorder(cuisine_group, mean_score, FUN = median),
   theme_minimal() +
   theme(
     axis.text.y = element_text(face = "bold", size = 10),
-    plot.title = element_text(face = "bold")
+    plot.title = element_text(face = "bold"),
+
   )
 ```
 
 We utilized a combined violin and boxplot to analyze the distribution of hygiene scores across cuisine groups. The red dashed line at a score of 13 marks the critical threshold for an "A" grade; the plot reveals that while the median scores for most cuisines fall within the "A" range, certain groups (such as Latin American and Asian cuisines) exhibit a wider distribution with a longer tail of higher scores, suggesting higher variance in compliance or inspection complexity.
+
+### 3.2. Where are the less clean restaurants located?
+
+```{r}
+library(sf)
+library(ggplot2)
+library(dplyr)
+
+# 1. Load and Transform Map (Exactly like the working code)
+nyc_map <- read_sf("/Users/dian/restaurants-in-nyc/nybb_25d/nybb.shp") |>
+  st_transform(crs = 4326)
+
+# 2. Clean Data (Using the filter logic that worked for you)
+# We use final_data, but filter out bad coordinates just like your example did
+map_data <- final_data |>
+  filter(!is.na(Longitude) & !is.na(Latitude)) |>
+  # This filter removes "0,0" points that would distort the map
+  filter(Longitude < -70 & Latitude > 35)
+
+# 3. Plot: One Big Map (No Facets)
+ggplot() +
+  # Layer 1: The Base Map (Grey background)
+  geom_sf(data = nyc_map, fill = "grey95", color = "grey80") +
+  
+  # Layer 2: The Dots (Using geom_point is safer/easier here)
+  geom_point(data = map_data, 
+             aes(x = Longitude, y = Latitude, color = last_grade), 
+             size = 1, alpha = 0.7) +
+  
+  # Styling
+  scale_color_manual(values = c("P" = "cornflowerblue", 
+                                "N" = "purple",
+                                "B" = "orange", 
+                                "C" = "red"),
+                     na.value = "grey80") +
+  
+  theme_void() +
+  labs(title = "Restaurant Hygiene Grades in NYC",
+       color = "Grade")
+```
+
+
+
+## 4. Correlation between inspection score and public sentiment: 
+
+
+```{r}
+library(ggalluvial)
+
+# 1. Prepare data: Bin the Yelp ratings
+alluvial_data <- final_data |>
+  filter(!is.na(cuisine_group), !is.na(last_grade), !is.na(yelp_rating), !is.na(is_closed)) |>
+  mutate(
+    # Binning Yelp Ratings
+    yelp_cat = case_when(
+      yelp_rating >= 4.0 ~ "High (4-5)",
+      yelp_rating >= 3.0 ~ "Med (3-3.9)",
+      TRUE ~ "Low (<3)"
+    ),
+    # formatting status
+    status = ifelse(is_closed, "Closed", "Open")
+  ) |>
+  # Count frequencies for the flow thickness
+  group_by(cuisine_group, last_grade, yelp_cat, status) |>
+  summarise(freq = n(), .groups = "drop")
+
+# 2. Plot
+ggplot(alluvial_data,
+       aes(axis1 = cuisine_group, 
+           axis2 = last_grade, 
+           axis3 = yelp_cat,
+           axis4 = status,
+           y = freq)) +
+  
+  geom_alluvium(aes(fill = cuisine_group), width = 1/12) +
+  geom_stratum(width = 1/12, fill = "grey90", color = "grey") +
+  
+  # Add text labels to the strata
+  geom_text(stat = "stratum", aes(label = after_stat(stratum)), size = 3) +
+  
+  scale_x_discrete(limits = c("Cuisine", "Grade", "Yelp Rating", "Status")) +
+  theme_minimal() +
+  labs(title = "From Cuisine to Closure: The Flow of Restaurant Quality",
+       y = "Number of Restaurants")
+```
 
