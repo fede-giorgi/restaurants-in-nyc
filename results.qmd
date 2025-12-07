@@ -136,11 +136,61 @@ restaurants <- df |>
   )
 
 # ==============================================================================
+# DATA AGGREGATION AT RESTAURANT LEVEL 
+# ==============================================================================
+
+# Helper functions to handle NAs safely
+last_non_null <- function(x) {
+  x <- x[!is.na(x)]
+  if (length(x) == 0) return(NA)
+  tail(x, 1)
+}
+
+safe_mean <- function(x) {
+  x <- x[!is.na(x)]
+  if (length(x) == 0) return(NA_real_)
+  mean(x)
+}
+
+restaurants <- df |>
+  # Remove dummy dates (1900) and focus on relevant recent data (post-2015)
+  filter(`INSPECTION DATE` >= ymd("2015-01-01")) |> 
+  
+  arrange(`INSPECTION DATE`) |>
+  group_by(CAMIS) |>
+  summarise(
+    DBA      = first(na.omit(DBA)),
+    BORO     = first(na.omit(BORO)),
+    BUILDING = first(BUILDING),
+    STREET   = first(STREET),
+    ZIPCODE  = first(ZIPCODE),
+    PHONE    = first(PHONE),
+    CUISINE_DESCRIPTION = first(`CUISINE DESCRIPTION`),
+    
+    # If the first value is NA, the mean retrieves the location across inspections
+    Latitude  = mean(Latitude, na.rm = TRUE), 
+    Longitude = mean(Longitude, na.rm = TRUE),
+
+    n_inspections    = n_distinct(`INSPECTION DATE`, na.rm = TRUE),
+    first_inspection = min(`INSPECTION DATE`, na.rm = TRUE),
+    last_inspection  = max(`INSPECTION DATE`, na.rm = TRUE),
+
+    mean_score = safe_mean(SCORE),
+    # Mean score provides a good summary of overall hygiene performance
+    
+    last_grade = last_non_null(GRADE),
+
+    # Create a list of all unique violations ever received by the restaurant
+    violations = list(unique(na.omit(`VIOLATION DESCRIPTION`))),
+    .groups = "drop"
+  )
+
+# ==============================================================================
 # CUISINE CATEGORIZATION MAPPING 
 # ==============================================================================
 
 mapping <- c(
-  # --- AMERICAN (Include ora Seafood, Jewish/Kosher e varianti regionali) ---
+  # --- AMERICAN ---
   "American"                       = "American",
   "New American"                   = "American",
   "Chicken"                        = "American",
@@ -156,11 +206,11 @@ mapping <- c(
   "Cajun"                          = "American",
   "Creole"                         = "American",
   "Creole/Cajun"                   = "American",
-  "Hawaiian"                       = "American", # Poke è spesso fast casual
-  "Seafood"                        = "American", # Unito ad American
-  "Jewish/Kosher"                  = "American", # Unito ad American (stile Deli)
+  "Hawaiian"                       = "American",
+  "Seafood"                        = "American",
+  "Jewish/Kosher"                  = "American",
 
-  # --- CAFE, DELI, BAKERY & DESSERTS (Include Sandwiches e Salads) ---
+  # --- CAFE, DELI, BAKERY & DESSERTS ---
   "Coffee/Tea"                     = "Cafe/Deli/Bakery",
   "Bakery Products/Desserts"       = "Cafe/Deli/Bakery",
   "Donuts"                         = "Cafe/Deli/Bakery",
@@ -168,7 +218,6 @@ mapping <- c(
   "Pancakes/Waffles"               = "Cafe/Deli/Bakery",
   "Nuts/Confectionary"             = "Cafe/Deli/Bakery",
   "Fruits/Vegetables"              = "Cafe/Deli/Bakery",
-  # Spostati qui come richiesto:
   "Sandwiches"                     = "Cafe/Deli/Bakery",
   "Sandwiches/Salads/Mixed Buffet" = "Cafe/Deli/Bakery",
   "Salads"                         = "Cafe/Deli/Bakery",
@@ -203,11 +252,11 @@ mapping <- c(
   "Chilean"                        = "Latin American",
   "Chimichurri"                    = "Latin American",
   
-  # --- ITALIAN (Include Pizza) ---
+  # --- ITALIAN ---
   "Pizza"                          = "Italian",
   "Italian"                        = "Italian",
   
-  # --- EUROPEAN (Spagnola, Est Europa, ecc.) ---
+  # --- EUROPEAN ---
   "Spanish"                        = "European",
   "Irish"                          = "European",
   "Eastern European"               = "European",
