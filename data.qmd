@@ -98,9 +98,9 @@ We have curated and merged 2 data sets for this project: 1.
 2.
 "Yelp Open Dataset" is maintained by Yelp and contains information about public ratings, reviews, and the current state of the restaurant (closed/open).
 
-#### Dataset Overview
+### Dataset Overview
 
-**1. DOHMH New York City Restaurant Inspection Results** - Source: NYC Department of Health and Mental Hygiene (DOHMH) https://data.cityofnewyork.us/Health/DOHMH-New-York-City-Restaurant-Inspection-Results/43nn-pn8j/about_data.
+**DOHMH New York City Restaurant Inspection Results** - Source: NYC Department of Health and Mental Hygiene (DOHMH) https://data.cityofnewyork.us/Health/DOHMH-New-York-City-Restaurant-Inspection-Results/43nn-pn8j/about_data.
 
 -   Scope: The dataset contains details on every sustained or initially cited violation from inspections conducted at active restaurants.
 
@@ -122,7 +122,7 @@ We have curated and merged 2 data sets for this project: 1.
 
 -   `first_inspection`and `last_inspection`: Indicates the time period of inspections done on each restaurant.
 
-**2. Yelp open data set** - Source: Yelp Fusion API (Business Search Endpoint).
+**Yelp open data set** - Source: Yelp Fusion API (Business Search Endpoint).
 - Scope: This dataset provides business-level metadata and aggregate public sentiment metrics for New York City restaurants that correspond to the facilities listed in the DOHMH dataset.
 - Methodology: Data was retrieved by querying the Yelp API using unique phone numbers extracted from the non-repeated DOHMH restaurant list.
 - Integration: This dataset is designed to be joined with the DOHMH inspection records using the phone number as the common key.
@@ -141,7 +141,7 @@ This serves as the primary foreign key to link this sentiment data back to the s
 
 ## Missing value analysis
 
-#### DOHMH New York City Restaurant Inspection Results\*\*
+#### DOHMH New York City Restaurant Inspection Results
 
 ```{r}
 # Calculate percentage of missing values per column
@@ -199,7 +199,6 @@ ggplot(top_patterns, aes(x = variable, y = fct_rev(fct_inorder(row_label)), fill
        fill = "Is Missing?") +
   
   theme_nyc()
-
 ```
 
 ## Restaurant-level aggregation and cuisine grouping
@@ -264,7 +263,7 @@ restaurants <- df |>
 # ==============================================================================
 
 mapping <- c(
-  # --- AMERICAN (Include ora Seafood, Jewish/Kosher e varianti regionali) ---
+  # --- AMERICAN ---
   "American"                       = "American",
   "New American"                   = "American",
   "Chicken"                        = "American",
@@ -284,7 +283,7 @@ mapping <- c(
   "Seafood"                        = "American",
   "Jewish/Kosher"                  = "American",
 
-  # --- CAFE, DELI, BAKERY & DESSERTS (Include Sandwiches e Salads) ---
+  # --- CAFE, DELI, BAKERY & DESSERTS ---
   "Coffee/Tea"                     = "Cafe/Deli/Bakery",
   "Bakery Products/Desserts"       = "Cafe/Deli/Bakery",
   "Donuts"                         = "Cafe/Deli/Bakery",
@@ -292,7 +291,6 @@ mapping <- c(
   "Pancakes/Waffles"               = "Cafe/Deli/Bakery",
   "Nuts/Confectionary"             = "Cafe/Deli/Bakery",
   "Fruits/Vegetables"              = "Cafe/Deli/Bakery",
-  # Spostati qui come richiesto:
   "Sandwiches"                     = "Cafe/Deli/Bakery",
   "Sandwiches/Salads/Mixed Buffet" = "Cafe/Deli/Bakery",
   "Salads"                         = "Cafe/Deli/Bakery",
@@ -327,11 +325,11 @@ mapping <- c(
   "Chilean"                        = "Latin American",
   "Chimichurri"                    = "Latin American",
   
-  # --- ITALIAN (Include Pizza) ---
+  # --- ITALIAN ---
   "Pizza"                          = "Italian",
   "Italian"                        = "Italian",
   
-  # --- EUROPEAN (Spagnola, Est Europa, ecc.) ---
+  # --- EUROPEAN ---
   "Spanish"                        = "European",
   "Irish"                          = "European",
   "Eastern European"               = "European",
@@ -383,7 +381,7 @@ restaurants <- restaurants |>
   )
 ```
 
-#### Yelp open data set\*\*
+#### Yelp open data set
 
 The Yelp dataset contains no missing values or duplicates, as incomplete records were filtered out during the data extraction process.
 And we joined Yelp's dataset containing rating score,review counts, and open/close status with DOHMN dataset using unique phone numbers of the restaurants rather than address or name because it could be inconsistent or duplicated.
