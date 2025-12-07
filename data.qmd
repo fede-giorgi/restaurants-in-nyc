@@ -1,23 +1,75 @@
 # Data
 
-```{r}
-# Load libraries
-library(tidyverse) 
-library(ggdensity)
-library(lubridate)
-library(dplyr)
-library(purrr)
+## Setup and Data loading
 
-options(dplyr.width = Inf)
-```
+This section installs required packages and loads the dataset directly from the NYC Open Data API.
 
 ```{r}
-# Load the dataset with specific column types
-df <- read_csv("C:/Users/famig/OneDrive/Scuola/0 Columbia University/1 Fall 2025/STAT GR5702 - Exploratory Data Analysis & Visualization/EDAV/DOHMH_New_York_City_Restaurant_Inspection_Results.csv",
-                 col_types = cols(
-    .default = col_character(),      # Set default to character for safety
-    CAMIS = col_double(),            # Unique ID
-    ZIPCODE = col_character(),       # Important: Keep as character to prevent stripping leading zeros
+# ==============================================================================
+# SETUP & DEPENDENCIES 
+# ==============================================================================
+packages <- c(
+  "tidyverse",
+  "ggdensity",
+  "lubridate",
+  "dplyr",
+  "purrr",
+  "sf",
+  "ggplot2"
+  )
+
+new_packages <- packages[!(packages %in% installed.packages()[, "Package"])]
+
+if (length(new_packages) > 0) {
+  install.packages(new_packages)
+}
+
+invisible(lapply(packages, library, character.only = TRUE))
+
+# ==============================================================================
+# VISUALIZATION THEME 
+# ==============================================================================
+theme_nyc <- function() {
+  theme_minimal(base_family = "sans") +
+    theme(
+      # Typography: Bold "Newspaper Headline" style or Subway Signage
+      plot.title = element_text(face = "bold", size = 18, color = "#121212", margin = margin(b = 10)),
+      plot.subtitle = element_text(size = 12, color = "#444444", margin = margin(b = 15)),
+      plot.caption = element_text(size = 9, color = "#666666", face = "italic"),
+      
+      # Axes: Strong and dark for structure
+      axis.title = element_text(face = "bold", size = 11, color = "#121212"),
+      axis.text = element_text(size = 10, color = "#222222"),
+      
+      # Grid: "The NYC Grid" (clean, thin major lines)
+      panel.grid.major = element_line(color = "#e0e0e0", linewidth = 0.5),
+      panel.grid.minor = element_blank(), # Remove minor grid lines to reduce visual noise
+      
+      # Legend and Layout
+      legend.position = "top", # Position top for immediate readability
+      legend.title = element_text(face = "bold", size = 10),
+      legend.text = element_text(size = 10),
+      
+      # Facet Strips (Headers for multi-panel plots)
+      strip.text = element_text(face = "bold", size = 11, hjust = 0),
+      strip.background = element_rect(fill = "transparent", color = NA)
+    )
+}
+
+# ==============================================================================
+# DATA INGESTION (API)
+# ==============================================================================
+
+# Define the remote URL to ensure reproducibility
+url_dati <- "https://data.cityofnewyork.us/api/views/43nn-pn8j/rows.csv?accessType=DOWNLOAD"
+
+# Load the dataset directly from the web
+df <- read_csv(url_dati,
+    # Enforce specific column types to handle parsing issues upfront
+    col_types = cols(
+    .default = col_character(),
+    CAMIS = col_double(),
+    ZIPCODE = col_character(),
     SCORE = col_double(),
     Latitude = col_double(),
     Longitude = col_double(),
@@ -26,24 +78,23 @@ df <- read_csv("C:/Users/famig/OneDrive/Scuola/0 Columbia University/1 Fall 2025
     BBL = col_double()
   ),
   show_col_types = FALSE
- ) %>%
-  # Clean up date columns immediately using lubridate
+ ) |>
+  # Parse date columns from string (Month-Day-Year) to Date objects
   mutate(`INSPECTION DATE` = mdy(`INSPECTION DATE`),
          `GRADE DATE` = mdy(`GRADE DATE`),
          `RECORD DATE` = mdy(`RECORD DATE`))
 ```
 
-## Description
-
 ## Missing value analysis
 
+Missing values are predominantly found in GRADE and GRADE DATE, both exceeding 50%. This reflects the inspection workflow, where a numeric score is assigned immediately, but a letter grade is often deferred until a re-inspection or final decision.
 
 ```{r}
 # Calculate percentage of missing values per column
-missing_summary <- df %>%
-  summarise(across(everything(), ~ mean(is.na(.)) * 100)) %>%
-  pivot_longer(everything(), names_to = "column", values_to = "percent_missing") %>%
-  filter(percent_missing > 0) %>% # Filter only columns with missing values
+missing_summary <- df |>
+  summarise(across(everything(), ~ mean(is.na(.)) * 100)) |>
+  pivot_longer(everything(), names_to = "column", values_to = "percent_missing") |>
+  filter(percent_missing > 0.1) |> # Filter only columns with missing values
   arrange(desc(percent_missing))
 
 # Bar chart
@@ -53,26 +104,26 @@ ggplot(missing_summary, aes(x = reorder(column, percent_missing), y = percent_mi
   labs(title = "Percentage of Missing Values by Column",
        x = "Variable", 
        y = "% Missing") +
-  theme_minimal()
+  theme_nyc()
 ```
 
-The bar chart highlights that GRADE and GRADE DATE are the variables with the highest missingness (approximately 50%). This is consistent with the inspection process, where many initial or administrative inspections generate a score but do not immediately result in a letter grade.
+Expanding on the column-wise analysis, the heatmap reveals the operational workflow behind the missing values. While Pattern 1 represents finalized inspections (complete data), Pattern 2 is nearly as frequent and accounts for the large gap between missing Scores and missing Grades. Additionally, Pattern 3 (missing both Score and Grade) likely isolates administrative or non-graded interactions, distinct from standard sanitary inspections
 
 ```{r}
 # 1. Create patterns
-missing_patterns <- df %>%
-  select(GRADE, `GRADE DATE`, SCORE, `VIOLATION CODE`, `ACTION`) %>%
-  mutate(across(everything(), is.na)) %>%
-  group_by(across(everything())) %>%
-  summarise(count = n(), .groups = "drop") %>%
-  arrange(desc(count)) %>%
-  ungroup() %>%
-  mutate(pattern_id = row_number()) %>%
+missing_patterns <- df |>
+  select(GRADE, `GRADE DATE`, SCORE, `VIOLATION CODE`, `ACTION`) |>
+  mutate(across(everything(), is.na)) |>
+  group_by(across(everything())) |>
+  summarise(count = n(), .groups = "drop") |>
+  arrange(desc(count)) |>
+  ungroup() |>
+  mutate(pattern_id = row_number()) |>
   pivot_longer(cols = -c(count, pattern_id), names_to = "variable", values_to = "is_missing")
 
 # 2. Prepare data for plotting (Top 10 only)
-top_patterns <- missing_patterns %>%
-  filter(pattern_id <= 10) %>%
+top_patterns <- missing_patterns |>
+  filter(pattern_id <= 10) |>
   # Create a descriptive Y-axis label including the count
   mutate(row_label = paste0("Pattern ", pattern_id, " (n = ", count, ")"))
 
@@ -91,15 +142,19 @@ ggplot(top_patterns, aes(x = variable, y = fct_rev(fct_inorder(row_label)), fill
        y = "Pattern Frequency", 
        fill = "Is Missing?") +
   
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Tilt x-axis text for readability
+  theme_nyc()
+
 ```
 
-The heatmap reveals that missing data follows structural patterns rather than being random. While Pattern 1 represents complete inspections, Pattern 2 (almost as frequent) indicates cases where a SCORE exists but the GRADE is missing, likely representing "Grade Pending" or initial inspection stages. Pattern 3 highlights administrative violations where neither a score nor a grade is assigned.
+## Restaurant-level aggregation and cuisine grouping
 
-## Restaurant-level aggregation
+To shift our focus from individual inspections to the restaurants themselves, we restructure the dataset. By grouping records under each unique CAMIS identifier, we generate a comprehensive profile for every venue. This allows us to average hygiene scores over time and categorize establishments into broader culinary traditions for clearer visualization.
 
 ```{r}
+# ==============================================================================
+# DATA AGGREGATION AT RESTAURANT LEVEL 
+# ==============================================================================
+
 # Helper functions to handle NAs safely
 last_non_null <- function(x) {
   x <- x[!is.na(x)]
@@ -113,16 +168,14 @@ safe_mean <- function(x) {
   mean(x)
 }
 
-# --- DATA TRANSFORMATION ---
-restaurants <- df %>%
-  # 1. TIME FILTER BEFORE GROUPING
+restaurants <- df |>
   # Remove dummy dates (1900) and focus on relevant recent data (post-2015)
-  filter(`INSPECTION DATE` >= ymd("2015-01-01")) %>% 
+  filter(`INSPECTION DATE` >= ymd("2015-01-01")) |> 
   
-  arrange(`INSPECTION DATE`) %>%
-  group_by(CAMIS) %>%
+  arrange(`INSPECTION DATE`) |>
+  group_by(CAMIS) |>
   summarise(
-    DBA      = first(na.omit(DBA)),    # Takes the first non-null name
+    DBA      = first(na.omit(DBA)),
     BORO     = first(na.omit(BORO)),
     BUILDING = first(BUILDING),
     STREET   = first(STREET),
@@ -130,7 +183,6 @@ restaurants <- df %>%
     PHONE    = first(PHONE),
     CUISINE_DESCRIPTION = first(`CUISINE DESCRIPTION`),
     
-    # 2. ROBUST COORDINATES
     # If the first value is NA, the mean retrieves the location across inspections
     Latitude  = mean(Latitude, na.rm = TRUE), 
     Longitude = mean(Longitude, na.rm = TRUE),
@@ -149,17 +201,10 @@ restaurants <- df %>%
     .groups = "drop"
   )
 
-cat("Final row count (Restaurants):", nrow(restaurants), "\n")
+# ==============================================================================
+# CUISINE CATEGORIZATION MAPPING 
+# ==============================================================================
 
-# View the resulting dataframe
-restaurants
-```
-
-The original dataset is granular, containing multiple rows for every single inspection and violation. To perform a restaurant-level analysis—such as mapping cuisine locations or comparing hygiene standards across different culinary traditions—we aggregate the data to create a unique entry for each establishment, summarizing its history into single metrics like mean_score and average coordinates.
-
-## Cuisine Grouping
-
-```{r}
 mapping <- c(
   # --- AMERICAN (Include ora Seafood, Jewish/Kosher e varianti regionali) ---
   "American"                       = "American",
@@ -178,8 +223,6 @@ mapping <- c(
   "Creole"                         = "American",
   "Creole/Cajun"                   = "American",
   "Hawaiian"                       = "American", # Poke è spesso fast casual
-  
-  # MERGE RICHIESTI:
   "Seafood"                        = "American", # Unito ad American
   "Jewish/Kosher"                  = "American", # Unito ad American (stile Deli)
 
@@ -275,13 +318,9 @@ mapping <- c(
 )
 
 # mapping
-restaurants <- restaurants %>%
+restaurants <- restaurants |>
   mutate(
     cuisine_group = mapping[CUISINE_DESCRIPTION],
     cuisine_group = ifelse(is.na(cuisine_group), "Other", cuisine_group)
   )
-
-# check
-restaurants %>%
-  count(cuisine_group, sort = TRUE)
 ``` 

@@ -1,25 +1,76 @@
 # Results
 
-```{r}
-# Load libraries
-library(tidyverse) 
-library(ggdensity)
-library(lubridate)
-library(dplyr)
-library(purrr)
+## Setup and Data loading
 
-options(dplyr.width = Inf)
-```
-
-## Geospatial Density Map
+This section installs required packages and loads the dataset directly from the NYC Open Data API.
 
 ```{r}
-# Load the dataset with specific column types
-df <- read_csv("C:/Users/famig/OneDrive/Scuola/0 Columbia University/1 Fall 2025/STAT GR5702 - Exploratory Data Analysis & Visualization/EDAV/DOHMH_New_York_City_Restaurant_Inspection_Results.csv",
-                 col_types = cols(
-    .default = col_character(),      # Set default to character for safety
-    CAMIS = col_double(),            # Unique ID
-    ZIPCODE = col_character(),       # Important: Keep as character to prevent stripping leading zeros
+
+# ==============================================================================
+# SETUP & DEPENDENCIES 
+# ==============================================================================
+packages <- c(
+  "tidyverse",
+  "ggdensity",
+  "lubridate",
+  "dplyr",
+  "purrr",
+  "sf",
+  "ggplot2"
+  )
+
+new_packages <- packages[!(packages %in% installed.packages()[, "Package"])]
+
+if (length(new_packages) > 0) {
+  install.packages(new_packages)
+}
+
+invisible(lapply(packages, library, character.only = TRUE))
+
+# ==============================================================================
+# VISUALIZATION THEME 
+# ==============================================================================
+theme_nyc <- function() {
+  theme_minimal(base_family = "sans") +
+    theme(
+      # Typography: Bold "Newspaper Headline" style or Subway Signage
+      plot.title = element_text(face = "bold", size = 18, color = "#121212", margin = margin(b = 10)),
+      plot.subtitle = element_text(size = 12, color = "#444444", margin = margin(b = 15)),
+      plot.caption = element_text(size = 9, color = "#666666", face = "italic"),
+      
+      # Axes: Strong and dark for structure
+      axis.title = element_text(face = "bold", size = 11, color = "#121212"),
+      axis.text = element_text(size = 10, color = "#222222"),
+      
+      # Grid: "The NYC Grid" (clean, thin major lines)
+      panel.grid.major = element_line(color = "#e0e0e0", linewidth = 0.5),
+      panel.grid.minor = element_blank(), # Remove minor grid lines to reduce visual noise
+      
+      # Legend and Layout
+      legend.position = "top", # Position top for immediate readability
+      legend.title = element_text(face = "bold", size = 10),
+      legend.text = element_text(size = 10),
+      
+      # Facet Strips (Headers for multi-panel plots)
+      strip.text = element_text(face = "bold", size = 11, hjust = 0),
+      strip.background = element_rect(fill = "transparent", color = NA)
+    )
+}
+
+# ==============================================================================
+# DATA INGESTION (API)
+# ==============================================================================
+
+# Define the remote URL to ensure reproducibility
+url_dati <- "https://data.cityofnewyork.us/api/views/43nn-pn8j/rows.csv?accessType=DOWNLOAD"
+
+# Load the dataset directly from the web
+df <- read_csv(url_dati,
+    # Enforce specific column types to handle parsing issues upfront
+    col_types = cols(
+    .default = col_character(),
+    CAMIS = col_double(),
+    ZIPCODE = col_character(),
     SCORE = col_double(),
     Latitude = col_double(),
     Longitude = col_double(),
@@ -28,14 +79,16 @@ df <- read_csv("C:/Users/famig/OneDrive/Scuola/0 Columbia University/1 Fall 2025
     BBL = col_double()
   ),
   show_col_types = FALSE
- ) %>%
-  # Clean up date columns immediately using lubridate
+ ) |>
+  # Parse date columns from string (Month-Day-Year) to Date objects
   mutate(`INSPECTION DATE` = mdy(`INSPECTION DATE`),
          `GRADE DATE` = mdy(`GRADE DATE`),
          `RECORD DATE` = mdy(`RECORD DATE`))
-```
 
-```{r}
+# ==============================================================================
+# DATA AGGREGATION AT RESTAURANT LEVEL 
+# ==============================================================================
+
 # Helper functions to handle NAs safely
 last_non_null <- function(x) {
   x <- x[!is.na(x)]
@@ -49,16 +102,14 @@ safe_mean <- function(x) {
   mean(x)
 }
 
-# --- DATA TRANSFORMATION ---
-restaurants <- df %>%
-  # 1. TIME FILTER BEFORE GROUPING
+restaurants <- df |>
   # Remove dummy dates (1900) and focus on relevant recent data (post-2015)
-  filter(`INSPECTION DATE` >= ymd("2015-01-01")) %>% 
+  filter(`INSPECTION DATE` >= ymd("2015-01-01")) |> 
   
-  arrange(`INSPECTION DATE`) %>%
-  group_by(CAMIS) %>%
+  arrange(`INSPECTION DATE`) |>
+  group_by(CAMIS) |>
   summarise(
-    DBA      = first(na.omit(DBA)),    # Takes the first non-null name
+    DBA      = first(na.omit(DBA)),
     BORO     = first(na.omit(BORO)),
     BUILDING = first(BUILDING),
     STREET   = first(STREET),
@@ -66,7 +117,6 @@ restaurants <- df %>%
     PHONE    = first(PHONE),
     CUISINE_DESCRIPTION = first(`CUISINE DESCRIPTION`),
     
-    # 2. ROBUST COORDINATES
     # If the first value is NA, the mean retrieves the location across inspections
     Latitude  = mean(Latitude, na.rm = TRUE), 
     Longitude = mean(Longitude, na.rm = TRUE),
@@ -84,10 +134,11 @@ restaurants <- df %>%
     violations = list(unique(na.omit(`VIOLATION DESCRIPTION`))),
     .groups = "drop"
   )
-```
 
+# ==============================================================================
+# CUISINE CATEGORIZATION MAPPING 
+# ==============================================================================
 
-```{r}
 mapping <- c(
   # --- AMERICAN (Include ora Seafood, Jewish/Kosher e varianti regionali) ---
   "American"                       = "American",
@@ -106,8 +157,6 @@ mapping <- c(
   "Creole"                         = "American",
   "Creole/Cajun"                   = "American",
   "Hawaiian"                       = "American", # Poke è spesso fast casual
-  
-  # MERGE RICHIESTI:
   "Seafood"                        = "American", # Unito ad American
   "Jewish/Kosher"                  = "American", # Unito ad American (stile Deli)
 
@@ -203,19 +252,17 @@ mapping <- c(
 )
 
 # mapping
-restaurants <- restaurants %>%
+restaurants <- restaurants |>
   mutate(
     cuisine_group = mapping[CUISINE_DESCRIPTION],
     cuisine_group = ifelse(is.na(cuisine_group), "Other", cuisine_group)
   )
 ```
 
+## Geospatial Density Map
+
 
 ```{r}
-library(sf)
-library(ggplot2)
-library(ggdensity)
-library(dplyr)
 
 # 1. Load the Shapefile
 nyc_map <- read_sf("C:/Users/famig/OneDrive/Scuola/0 Columbia University/1 Fall 2025/STAT GR5702 - Exploratory Data Analysis & Visualization/EDAV/nybb_25d/nybb.shp") %>%
@@ -275,8 +322,6 @@ library(dplyr)
 
 # Filter data for the plot
 score_analysis <- restaurants %>%
-  # Exclude "Other" to keep the comparison meaningful
-  filter(cuisine_group != "Other") %>%
   # Remove extreme outliers (scores > 60 are rare) for better readability
   filter(mean_score < 60)
 

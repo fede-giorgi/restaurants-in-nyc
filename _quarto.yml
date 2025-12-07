@@ -11,7 +11,7 @@ book:
   title: "Restaurants in NYC"
   author:
     - Federico Giorgi(fg2617)
-    - Rencong Jiang(rj2798)
+    - Rencong Jiang (rj2798)
   repo-url: https://github.com/fede-giorgi/restaurants-in-nyc
   date: today
   page-footer:
@@ -28,5 +28,3 @@ format:
   html:
     theme: cosmo
     code-fold: true
-
-
